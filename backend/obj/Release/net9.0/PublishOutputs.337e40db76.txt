@@ -1,0 +1,15 @@
+C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\frontend\backend\backend.exe
+C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\frontend\backend\appsettings.Development.json
+C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\frontend\backend\appsettings.json
+C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\frontend\backend\backend.dll
+C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\frontend\backend\backend.deps.json
+C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\frontend\backend\backend.runtimeconfig.json
+C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\frontend\backend\backend.pdb
+C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\frontend\backend\ClosedXML.dll
+C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\frontend\backend\ClosedXML.Parser.dll
+C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\frontend\backend\DocumentFormat.OpenXml.dll
+C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\frontend\backend\DocumentFormat.OpenXml.Framework.dll
+C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\frontend\backend\ExcelNumberFormat.dll
+C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\frontend\backend\RBush.dll
+C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\frontend\backend\SixLabors.Fonts.dll
+C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\frontend\backend\System.IO.Packaging.dll
