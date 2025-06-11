@@ -4,6 +4,7 @@ C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\backend\obj\Debug\net9.0\backend.A
 C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\backend\obj\Debug\net9.0\backend.AssemblyInfo.cs
 C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\backend\obj\Debug\net9.0\backend.csproj.CoreCompileInputs.cache
 C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\backend\obj\Debug\net9.0\backend.MvcApplicationPartsAssemblyInfo.cache
+C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\backend\obj\Debug\net9.0\backend.sourcelink.json
 C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\backend\bin\Debug\net9.0\appsettings.Development.json
 C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\backend\bin\Debug\net9.0\appsettings.json
 C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\backend\bin\Debug\net9.0\backend.staticwebassets.runtime.json
@@ -13,11 +14,15 @@ C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\backend\bin\Debug\net9.0\backend.d
 C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\backend\bin\Debug\net9.0\backend.runtimeconfig.json
 C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\backend\bin\Debug\net9.0\backend.dll
 C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\backend\bin\Debug\net9.0\backend.pdb
+C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\backend\bin\Debug\net9.0\BouncyCastle.Cryptography.dll
 C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\backend\bin\Debug\net9.0\ClosedXML.dll
 C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\backend\bin\Debug\net9.0\ClosedXML.Parser.dll
 C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\backend\bin\Debug\net9.0\DocumentFormat.OpenXml.dll
 C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\backend\bin\Debug\net9.0\DocumentFormat.OpenXml.Framework.dll
 C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\backend\bin\Debug\net9.0\ExcelNumberFormat.dll
+C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\backend\bin\Debug\net9.0\FuzzySharp.dll
+C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\backend\bin\Debug\net9.0\MailKit.dll
+C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\backend\bin\Debug\net9.0\MimeKit.dll
 C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\backend\bin\Debug\net9.0\RBush.dll
 C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\backend\bin\Debug\net9.0\SixLabors.Fonts.dll
 C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\backend\bin\Debug\net9.0\System.IO.Packaging.dll
@@ -33,7 +38,3 @@ C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\backend\obj\Debug\net9.0\refint\ba
 C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\backend\obj\Debug\net9.0\backend.pdb
 C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\backend\obj\Debug\net9.0\backend.genruntimeconfig.cache
 C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\backend\obj\Debug\net9.0\ref\backend.dll
-C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\backend\obj\Debug\net9.0\backend.sourcelink.json
-C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\backend\bin\Debug\net9.0\BouncyCastle.Cryptography.dll
-C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\backend\bin\Debug\net9.0\MailKit.dll
-C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\backend\bin\Debug\net9.0\MimeKit.dll

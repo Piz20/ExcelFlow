@@ -93,6 +93,15 @@
           }
         }
       },
+      "FuzzySharp/2.0.2": {
+        "type": "package",
+        "compile": {
+          "lib/netcoreapp2.1/FuzzySharp.dll": {}
+        },
+        "runtime": {
+          "lib/netcoreapp2.1/FuzzySharp.dll": {}
+        }
+      },
       "MailKit/4.12.1": {
         "type": "package",
         "dependencies": {
@@ -330,6 +339,26 @@
         "lib/netstandard2.0/ExcelNumberFormat.xml"
       ]
     },
+    "FuzzySharp/2.0.2": {
+      "sha512": "sBKqWxw3g//peYxDZ8JipRlyPbIyBtgzqBVA5GqwHVeqtIrw75maGXAllztf+1aJhchD+drcQIgf2mFho8ZV8A==",
+      "type": "package",
+      "path": "fuzzysharp/2.0.2",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "README.md",
+        "fuzzysharp.2.0.2.nupkg.sha512",
+        "fuzzysharp.nuspec",
+        "lib/net45/FuzzySharp.dll",
+        "lib/net46/FuzzySharp.dll",
+        "lib/net461/FuzzySharp.dll",
+        "lib/netcoreapp2.0/FuzzySharp.dll",
+        "lib/netcoreapp2.1/FuzzySharp.dll",
+        "lib/netstandard1.6/FuzzySharp.dll",
+        "lib/netstandard2.0/FuzzySharp.dll",
+        "lib/netstandard2.1/FuzzySharp.dll"
+      ]
+    },
     "MailKit/4.12.1": {
       "sha512": "rIqJm92qtHvk1hDchsJ95Hy7n46A7imE24ol++ikXBsjf3Bi1qDBu4H91FfY6LrYXJaxRlc2gIIpC8AOJrCbqg==",
       "type": "package",
@@ -540,6 +569,7 @@
   "projectFileDependencyGroups": {
     "net9.0": [
       "ClosedXML >= 0.105.0",
+      "FuzzySharp >= 2.0.2",
       "MailKit >= 4.12.1"
     ]
   },
@@ -596,6 +626,10 @@
           "ClosedXML": {
             "target": "Package",
             "version": "[0.105.0, )"
+          },
+          "FuzzySharp": {
+            "target": "Package",
+            "version": "[2.0.2, )"
           },
           "MailKit": {
             "target": "Package",

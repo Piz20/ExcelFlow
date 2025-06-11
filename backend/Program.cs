@@ -1,52 +1,59 @@
 using ExcelFlow.Hubs;
 using ExcelFlow.Services;
-using Microsoft.AspNetCore.Builder; // Make sure this is present
-using Microsoft.Extensions.DependencyInjection; // Make sure this is present
-using Microsoft.Extensions.Hosting; // Make sure this is present
-using Microsoft.Extensions.Configuration; // Make sure this is present
+using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting; // Souvent implicite avec .NET 6+, mais bon de le garder
+using Microsoft.Extensions.Configuration; // Nécessaire si vous l'injectez directement, mais builder.Configuration est suffisant.
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 🛠️ Ajout des services AVANT builder.Build()
+// --- Configuration des Services (Add services to the container.) ---
+// C'est ici que tous les services sont enregistrés dans le conteneur d'injection de dépendances.
 
-// 1. Add IConfiguration (already loaded by builder.CreateApplicationBuilder)
-// It's good practice to explicitly add it to the DI container if you're injecting it.
-builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
+// Services spécifiques à l'application
+builder.Services.AddScoped<SendEmail>();
+builder.Services.AddScoped<PartnerEmailSender>();
+builder.Services.AddScoped<PartnerFileGenerator>(); // Votre service de génération de fichiers
 
-// 2. Register your SendEmail class for Dependency Injection
-// Use AddTransient if SendEmail does not hold state between requests
-// Use AddScoped if SendEmail needs to hold state within a single request
-// Use AddSingleton if SendEmail should be a single instance for the entire app lifetime
-// For an email sender, AddTransient or AddScoped are generally appropriate. AddScoped is a good default.
-builder.Services.AddScoped<SendEmail>(); // <--- ADD/CONFIRM THIS LINE FOR SendEmail
+// Services ASP.NET Core
+builder.Services.AddControllers(); // Ajoute la prise en charge des contrôleurs MVC pour les APIs
+builder.Services.AddEndpointsApiExplorer(); // Nécessaire pour Swagger/OpenAPI
 
-builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer(); // For Swagger/OpenAPI support, if you're using it
-builder.Services.AddSignalR();
-builder.Services.AddScoped<PartnerFileGenerator>(); // Your existing service registration
+// Services SignalR
+builder.Services.AddSignalR(); // Ajoute les services nécessaires pour SignalR
 
-// Configure URLs (This is generally done via launchSettings.json,
-// but setting it here also works for direct execution)
+// Configuration des URLs (principalement défini via launchSettings.json, mais peut être surchargé ici)
+// Garder cette ligne si vous souhaitez forcer les URLs ou pour des environnements spécifiques.
 builder.WebHost.UseUrls("http://localhost:5297", "https://localhost:7274");
+
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// --- Configuration du Pipeline de Requêtes HTTP (Configure the HTTP request pipeline.) ---
+// L'ordre des middlewares ici est CRUCIAL !
 
-// Enable static files (like content in wwwroot)
+
+// Redirection HTTP vers HTTPS pour la sécurité
+app.UseHttpsRedirection();
+
+// Active le service de fichiers statiques (pour servir des fichiers comme HTML, CSS, JS depuis wwwroot)
 app.UseStaticFiles();
 
-
-
+// Active le routage pour faire correspondre les requêtes aux endpoints
 app.UseRouting();
 
-// Use authentication and authorization middleware (if you have any defined)
+// Configure l'autorisation (doit venir après UseRouting et UseAuthentication si présent)
 app.UseAuthorization();
-// app.UseAuthentication(); // If you have authentication configured, add this before UseAuthorization
+// Si vous avez de l'authentification, décommentez et placez 'app.UseAuthentication();' ICI, AVANT UseAuthorization.
 
+// --- Mapping des endpoints ---
+// Associe les requêtes entrantes aux contrôleurs et aux hubs SignalR.
 
-// Map endpoints for controllers and SignalR hubs
+// Mappe les contrôleurs d'API
 app.MapControllers();
+
+// Mappe le hub SignalR à son chemin d'accès
 app.MapHub<PartnerFileHub>("/partnerFileHub");
 
+// --- Démarrage de l'application ---
 app.Run();
