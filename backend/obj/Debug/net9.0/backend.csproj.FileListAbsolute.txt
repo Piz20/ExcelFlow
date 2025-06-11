@@ -34,3 +34,6 @@ C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\backend\obj\Debug\net9.0\backend.p
 C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\backend\obj\Debug\net9.0\backend.genruntimeconfig.cache
 C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\backend\obj\Debug\net9.0\ref\backend.dll
 C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\backend\obj\Debug\net9.0\backend.sourcelink.json
+C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\backend\bin\Debug\net9.0\BouncyCastle.Cryptography.dll
+C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\backend\bin\Debug\net9.0\MailKit.dll
+C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\backend\bin\Debug\net9.0\MimeKit.dll
