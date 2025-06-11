@@ -11,7 +11,6 @@ using ClosedXML.Excel;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.SignalR;
 using System.Threading;
-// FuzzySharp n'est définitivement plus nécessaire.
 using ExcelFlow.Hubs;
 
 namespace ExcelFlow.Services;
@@ -60,7 +59,9 @@ public class PartnerEmailSender
     {
         public string FileName { get; set; } = string.Empty;
         public string PartnerName { get; set; } = string.Empty;
-        public List<string> RecipientEmails { get; set; } = new List<string>();
+        public List<string> RecipientEmails { get; set; } = new List<string>(); // Keep track of TO recipients for summary
+        public List<string> CcRecipientsSent { get; set; } = new List<string>(); // Track actual Cc recipients sent
+        public List<string> BccRecipientsSent { get; set; } = new List<string>(); // Track actual Bcc recipients sent
     }
 
     /// <summary>
@@ -222,6 +223,8 @@ public class PartnerEmailSender
     /// <param name="subject">Sujet de l'email.</param>
     /// <param name="body">Corps de l'email (HTML).</param>
     /// <param name="fromDisplayName">Nom d'affichage de l'expéditeur. (Optionnel)</param>
+    /// <param name="ccRecipients">Liste d'adresses email à mettre en copie carbone (Cc). Optionnel.</param>
+    /// <param name="bccRecipients">Liste d'adresses email à mettre en copie carbone invisible (Bcc). Optionnel.</param>
     /// <param name="cancellationToken">Token to observe for cancellation requests.</param>
     /// <returns>Une tâche représentant l'opération d'envoi.</returns>
     public async Task SendEmailsToPartnersWithAttachments(
@@ -230,6 +233,8 @@ public class PartnerEmailSender
         string subject,
         string body,
         string? fromDisplayName = null,
+        List<string>? ccRecipients = null, // AJOUTÉ : Paramètre Cc
+        List<string>? bccRecipients = null, // AJOUTÉ : Paramètre Bcc
         CancellationToken cancellationToken = default)
     {
         await LogAndSend($"Démarrage du processus d'envoi d'emails basé sur les fichiers générés...", cancellationToken);
@@ -369,10 +374,13 @@ public class PartnerEmailSender
                 await LogAndSend($"  Adresses email cibles pour '{foundPartner.PartnerName}': {string.Join(", ", foundPartner.Emails)}", cancellationToken);
                 await LogAndSend($"  Envoi de l'email à {foundPartner.PartnerName} avec le fichier '{Path.GetFileName(filePath)}' en pièce jointe.", cancellationToken);
 
+                // Appel au service SendEmail avec les paramètres Cc et Bcc
                 bool sent = await _sendEmailService.SendEmailAsync(
                     subject: subject,
                     body: body,
                     toRecipients: foundPartner.Emails,
+                    ccRecipients: ccRecipients, // PASSAGE DES PARAMÈTRES CC
+                    bccRecipients: bccRecipients, // PASSAGE DES PARAMÈTRES BCC
                     fromDisplayName: fromDisplayName,
                     attachmentFilePaths: new List<string> { filePath },
                     cancellationToken: cancellationToken
@@ -386,7 +394,9 @@ public class PartnerEmailSender
                     {
                         FileName = Path.GetFileName(filePath),
                         PartnerName = foundPartner.PartnerName,
-                        RecipientEmails = foundPartner.Emails.ToList()
+                        RecipientEmails = foundPartner.Emails.ToList(),
+                        CcRecipientsSent = ccRecipients?.ToList() ?? new List<string>(), // Capture les Cc effectivement envoyés
+                        BccRecipientsSent = bccRecipients?.ToList() ?? new List<string>() // Capture les Bcc effectivement envoyés
                     });
                 }
                 else
@@ -416,7 +426,15 @@ public class PartnerEmailSender
             await LogAndSend($"Total de fichiers envoyés : {sentEmailSummaries.Count}", cancellationToken);
             foreach (var summary in sentEmailSummaries)
             {
-                await LogAndSend($"  - Fichier: '{summary.FileName}' envoyé à Partenaire: '{summary.PartnerName}' ({string.Join(", ", summary.RecipientEmails)})", cancellationToken);
+                await LogAndSend($"  - Fichier: '{summary.FileName}' envoyé à Partenaire: '{summary.PartnerName}' (To: {string.Join(", ", summary.RecipientEmails)})", cancellationToken);
+                if (summary.CcRecipientsSent.Any())
+                {
+                     await LogAndSend($"    Cc: {string.Join(", ", summary.CcRecipientsSent)}", cancellationToken);
+                }
+                if (summary.BccRecipientsSent.Any())
+                {
+                    await LogAndSend($"    Bcc: {string.Join(", ", summary.BccRecipientsSent)} (Non visible par les destinataires To/Cc)", cancellationToken);
+                }
             }
         }
         else
