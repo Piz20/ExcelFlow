@@ -33,3 +33,4 @@ C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\backend\obj\Debug\net9.0\refint\ba
 C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\backend\obj\Debug\net9.0\backend.pdb
 C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\backend\obj\Debug\net9.0\backend.genruntimeconfig.cache
 C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\backend\obj\Debug\net9.0\ref\backend.dll
+C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\backend\obj\Debug\net9.0\backend.sourcelink.json

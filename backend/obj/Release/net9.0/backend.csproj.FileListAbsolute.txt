@@ -33,3 +33,4 @@ C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\backend\obj\Release\net9.0\backend
 C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\backend\obj\Release\net9.0\backend.genruntimeconfig.cache
 C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\backend\obj\Release\net9.0\ref\backend.dll
 C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\backend\obj\Release\net9.0\compressed\wya47x6ila-w81apup555.gz
+C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\backend\obj\Release\net9.0\backend.sourcelink.json

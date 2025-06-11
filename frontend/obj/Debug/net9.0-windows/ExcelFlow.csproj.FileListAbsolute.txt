@@ -191,3 +191,9 @@ C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\frontend\obj\Debug\net9.0-windows\
 C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\frontend\obj\Debug\net9.0-windows\ExcelFlow.pdb
 C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\frontend\obj\Debug\net9.0-windows\ExcelFlow.genruntimeconfig.cache
 C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\frontend\obj\Debug\net9.0-windows\ref\ExcelFlow.dll
+C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\frontend\obj\Debug\net9.0-windows\Views\GenerationView.g.cs
+C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\frontend\obj\Debug\net9.0-windows\ExcelFlow_MarkupCompile.lref
+C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\frontend\obj\Debug\net9.0-windows\Views\GenerationView.baml
+C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\frontend\obj\Debug\net9.0-windows\ExcelFlow.sourcelink.json
+C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\frontend\obj\Debug\net9.0-windows\Views\SendEmailView.baml
+C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\frontend\obj\Debug\net9.0-windows\Views\SendEmailView.g.cs

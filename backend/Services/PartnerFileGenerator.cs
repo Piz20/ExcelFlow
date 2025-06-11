@@ -259,19 +259,23 @@ namespace ExcelFlow.Services
                     }
 
 
+                        //AJOUT DES FEUILLES SUPPLÉMENTAIRES ICI
                     LogOnly($"  - Ajout des feuilles supplémentaires pour '{partnerName}'..."); // Changement ici
                     var feuillesAScanner = new List<string> { "Activité nette à J", "J+1", "Regul" };
                     await AddSupplementarySheetsAsync(worksheet.Workbook, templateWb, partnerName, feuillesAScanner, cancellationToken);
                     LogOnly($"  - Traitement des feuilles supplémentaires terminé pour '{partnerName}'."); // Changement ici
 
+                     // Création du nom de fichier de sortie
                     string safePartnerName = string.Concat(partnerName.Split(Path.GetInvalidFileNameChars()));
-                    string outputFileName = $"COMPTE SUPPORT {safePartnerName} du {dateStrmin} au {dateStrmax}.xlsx";
+                    string dateRange = (dateStrmin == dateStrmax) ? dateStrmin : $"{dateStrmin} au {dateStrmax}";
+                    string outputFileName = $"COMPTE SUPPORT {safePartnerName} du {dateRange}.xlsx";
                     string outputPath = Path.Combine(outputDir, outputFileName);
 
-                    LogOnly($"  - Sauvegarde du fichier : {outputFileName} dans {outputDir}"); // Changement ici
+                    LogOnly($"  - Sauvegarde du fichier : {outputFileName} dans {outputDir}");
                     templateWb.SaveAs(outputPath);
-                    await LogAndSend($"✅ Fichier '{outputFileName}' généré avec succès.", cancellationToken); // Message important pour l'utilisateur
+                    await LogAndSend($"✅ Fichier '{outputFileName}' généré avec succès.", cancellationToken);
                 }
+
                 catch (OperationCanceledException)
                 {
                     await LogAndSend("❌ Génération annulée par l'utilisateur.", CancellationToken.None);
@@ -296,7 +300,7 @@ namespace ExcelFlow.Services
                     Message = $"Progression : {(int)percentage}% - Fichier {currentProcessed} sur {count} généré."
                 }, cancellationToken);
 
-                await LogAndSend($"Progression : {(int)percentage}% - Fichier {currentProcessed} sur {count} généré.", cancellationToken);
+                //await LogAndSend($"Progression : {(int)percentage}% - Fichier {currentProcessed} sur {count} généré.", cancellationToken);
 
             }
 
