@@ -134,6 +134,7 @@ public class PartnerEmailSender
         List<PartnerInfo> partners;
         try
         {
+            // Ligne corrigée ici : Appel à ReadPartnersFromExcel qui retourne une List<PartnerInfo>
             partners = await Task.Run(() => _partnerExcelReader.ReadPartnersFromExcel(partnerEmailFilePath, cancellationToken), cancellationToken);
             await LogAndSend($"Lecture terminée. {partners.Count} partenaires trouvés dans le fichier Excel.", cancellationToken);
             await SendProgressToFrontend(0, 0, $"Lecture des partenaires terminée. {partners.Count} partenaires trouvés.", cancellationToken);
@@ -218,10 +219,15 @@ public class PartnerEmailSender
 
             string fileName = Path.GetFileName(filePath);
             
+            // La logique 'processedFiles.Contains(filePath)' est un peu redondante si on ne traite
+            // qu'un seul fichier par partenaire. Si un fichier ne doit être envoyé qu'une fois,
+            // même s'il correspond à plusieurs mots-clés de différents partenaires, cette logique est utile.
+            // Sinon, si chaque fichier correspond à un seul partenaire, cette partie peut être simplifiée.
+            // Pour l'instant, je la garde pour éviter de modifier la logique de déduplication existante.
             if (processedFiles.Contains(filePath))
             {
                 filesProcessedCount++;
-                await LogAndSend($"[Fichier '{fileName}'] Fichier déjà traité pour un autre partenaire. Ignoré.", cancellationToken);
+                await LogAndSend($"[Fichier '{fileName}'] Fichier déjà traité. Ignoré.", cancellationToken);
                 await SendProgressToFrontend(filesProcessedCount, totalFilesToProcess, $"Fichier '{fileName}' déjà traité. Ignoré.", cancellationToken);
                 await LogAndSend("---", cancellationToken);
                 continue;
@@ -241,29 +247,21 @@ public class PartnerEmailSender
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                bool matched = false;
-                if (!string.IsNullOrWhiteSpace(partner.SearchableNameFull))
+                // On vérifie tous les mots-clés de recherche du partenaire
+                foreach (var keyword in partner.SearchableKeywords)
                 {
-                    var regexFull = new Regex($@"\b{Regex.Escape(partner.SearchableNameFull)}\b", RegexOptions.CultureInvariant);
-                    if (regexFull.IsMatch(normalizedFileName))
+                    // Utilisation de Regex.Escape pour sécuriser le mot-clé dans l'expression régulière
+                    // et \b pour les limites de mot afin d'éviter les correspondances partielles indésirables.
+                    var regex = new Regex($@"\b{Regex.Escape(keyword)}\b", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+                    if (regex.IsMatch(normalizedFileName))
                     {
-                        matched = true;
+                        foundPartner = partner;
+                        break; // Partenaire trouvé pour ce fichier, pas besoin de vérifier d'autres mots-clés pour ce fichier/partenaire
                     }
                 }
-
-                if (!matched && partner.SearchableNameSigle != null && !string.IsNullOrWhiteSpace(partner.SearchableNameSigle))
+                if (foundPartner != null)
                 {
-                    var regexSigle = new Regex($@"\b{Regex.Escape(partner.SearchableNameSigle)}\b", RegexOptions.CultureInvariant);
-                    if (regexSigle.IsMatch(normalizedFileName))
-                    {
-                        matched = true;
-                    }
-                }
-
-                if (matched)
-                {
-                    foundPartner = partner;
-                    break;
+                    break; // Partenaire trouvé pour ce fichier, pas besoin de vérifier d'autres partenaires
                 }
             }
 
@@ -302,7 +300,7 @@ public class PartnerEmailSender
                 {
                     emailsSentSuccessfully++;
                     await LogAndSend($"[Fichier '{fileName}'] Email envoyé avec succès à {foundPartner.PartnerName}.", cancellationToken);
-                    processedFiles.Add(filePath);
+                    processedFiles.Add(filePath); // Marquer le fichier comme traité
                     var summary = new SentEmailSummary
                     {
                         FileName = fileName,

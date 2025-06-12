@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 using ClosedXML.Excel;
 using Microsoft.AspNetCore.SignalR;
 using ExcelFlow.Hubs;
-using ExcelFlow.Models; // <<< ADD THIS LINE to reference the new EmailData class
+using ExcelFlow.Models; 
 
 namespace ExcelFlow.Utilities;
 
@@ -59,50 +59,10 @@ public class EmailDataExtractor
             return null;
         }
 
-        var data = new EmailData(); // <<< Use EmailData
+        var data = new EmailData(); 
         string fileName = Path.GetFileNameWithoutExtension(filePath);
-        await _logAndSend($"Analyse du nom de fichier pour extraction : '{fileName}'", cancellationToken);
+        await _logAndSend($"Analyse du fichier Excel pour l'extraction de données : '{Path.GetFileName(filePath)}'", cancellationToken);
 
-        // --- 1. Extraire la date/intervalle du nom du fichier ---
-        string datePattern = @"\d{2}[\s./]\d{2}[\s./](?:\d{4}|\d{2})";
-        var dateMatch = Regex.Match(fileName, $@"du\s+({datePattern})(?:\s+au\s+({datePattern}))?", RegexOptions.IgnoreCase);
-
-        if (dateMatch.Success)
-        {
-            string startDate = dateMatch.Groups[1].Value.Trim();
-            string endDate = dateMatch.Groups[2].Success ? dateMatch.Groups[2].Value.Trim() : string.Empty;
-
-            if (!string.IsNullOrEmpty(endDate))
-            {
-                data.DateString = $"{startDate} au {endDate}";
-            }
-            else
-            {
-                data.DateString = startDate;
-            }
-            await _logAndSend($"Date/Intervalle extrait : '{data.DateString}'", cancellationToken);
-        }
-        else
-        {
-            await _logAndSendError($"Impossible d'extraire la date ou l'intervalle du nom de fichier : '{fileName}'. Les formats 'du JJ.MM.AAAA', 'du JJ/MM/AAAA', 'du JJ MM AAAA' (ou AA) ou leurs intervalles n'ont pas été trouvés.", cancellationToken);
-            data.DateString = "[DATE_NON_TROUVÉE]";
-        }
-
-        // --- 2. Extraire le nom du partenaire du nom du fichier ---
-        var partnerNameMatch = Regex.Match(fileName, @"COMPTE SUPPORT\s+([^d]+)\s+du", RegexOptions.IgnoreCase);
-
-        if (partnerNameMatch.Success && partnerNameMatch.Groups.Count > 1)
-        {
-            data.PartnerNameInFile = partnerNameMatch.Groups[1].Value.Trim();
-            await _logAndSend($"Nom du partenaire extrait : '{data.PartnerNameInFile}'", cancellationToken);
-        }
-        else
-        {
-            await _logAndSendError($"Impossible d'extraire le nom du partenaire du nom de fichier : '{fileName}'. Le format 'COMPTE SUPPORT [NOM_PARTENAIRE] du ...' n'a pas été trouvé.", cancellationToken);
-            data.PartnerNameInFile = "[NOM_PARTENAIRE_NON_TROUVÉ]";
-        }
-
-        // --- 3. Extraire le solde final du fichier Excel (logique inchangée, elle était déjà robuste) ---
         try
         {
             using (var workbook = new XLWorkbook(filePath))
@@ -115,10 +75,40 @@ public class EmailDataExtractor
                     return null;
                 }
 
-                const string headerToFind = "Solde fin de journée avant Cash out Auto";
-                int headerRow = -1;
-                int targetColumn = -1;
+                // --- 1. Extraire la date/intervalle du nom du fichier ---
+                string datePattern = @"\d{2}[\s./]\d{2}[\s./](?:\d{4}|\d{2})";
+                var dateMatch = Regex.Match(fileName, $@"du\s+({datePattern})(?:\s+au\s+({datePattern}))?", RegexOptions.IgnoreCase);
 
+                if (dateMatch.Success)
+                {
+                    string startDate = dateMatch.Groups[1].Value.Trim();
+                    string endDate = dateMatch.Groups[2].Success ? dateMatch.Groups[2].Value.Trim() : string.Empty;
+
+                    if (!string.IsNullOrEmpty(endDate))
+                    {
+                        data.DateString = $"{startDate} au {endDate}";
+                    }
+                    else
+                    {
+                        data.DateString = startDate;
+                    }
+                    await _logAndSend($"Date/Intervalle extrait du nom de fichier : '{data.DateString}'", cancellationToken);
+                }
+                else
+                {
+                    await _logAndSendError($"Impossible d'extraire la date ou l'intervalle du nom de fichier : '{fileName}'. Les formats 'du JJ.MM.AAAA', 'du JJ/MM/AAAA', 'du JJ MM AAAA' (ou AA) ou leurs intervalles n'ont pas été trouvés.", cancellationToken);
+                    data.DateString = "[DATE_NON_TROUVÉE]";
+                }
+
+                // --- 2. Extraire le nom du partenaire : première cellule non vide sous l'en-tête "PARTENAIRES" ---
+                const string partnerNameHeader = "PARTENAIRES"; 
+                const string headerToFindBalance = "Solde fin de journée avant Cash out Auto";
+
+                int partnerNameCol = -1;
+                int balanceCol = -1;
+                int headerRow = -1;
+
+                // Scan up to the first 10 rows to find headers
                 var lastRowUsedInHeaders = worksheet.LastRowUsed();
                 int maxHeaderRowsToScan = Math.Min(10, lastRowUsedInHeaders != null ? lastRowUsedInHeaders.RowNumber() : worksheet.LastRow().RowNumber());
 
@@ -128,37 +118,90 @@ public class EmailDataExtractor
                     var row = worksheet.Row(rowNum);
                     foreach (var cell in row.CellsUsed())
                     {
-                        if (cell.Value.ToString().Trim().Equals(headerToFind, StringComparison.OrdinalIgnoreCase))
+                        string headerText = cell.Value.ToString()?.Trim() ?? string.Empty;
+
+                        if (!string.IsNullOrEmpty(headerText))
                         {
-                            targetColumn = cell.Address.ColumnNumber;
-                            headerRow = rowNum;
+                            if (headerText.Equals(partnerNameHeader, StringComparison.OrdinalIgnoreCase))
+                            {
+                                partnerNameCol = cell.Address.ColumnNumber;
+                                headerRow = rowNum; 
+                            }
+                            else if (headerText.Equals(headerToFindBalance, StringComparison.OrdinalIgnoreCase))
+                            {
+                                balanceCol = cell.Address.ColumnNumber;
+                                if (headerRow == -1) headerRow = rowNum; 
+                            }
+                        }
+
+                        if (partnerNameCol != -1 && balanceCol != -1 && headerRow != -1)
                             break;
+                    }
+                    if (partnerNameCol != -1 && balanceCol != -1 && headerRow != -1)
+                        break;
+                }
+                
+                if (partnerNameCol == -1)
+                {
+                    await _logAndSendError($"L'en-tête obligatoire '{partnerNameHeader}' n'a pas été trouvé dans le fichier Excel '{Path.GetFileName(filePath)}'.", cancellationToken);
+                    data.PartnerNameInFile = "[NOM_PARTENAIRE_NON_TROUVÉ]";
+                }
+                else
+                {
+                    IXLCell? partnerNameCell = null;
+                    // On commence à chercher la première cellule non vide APRÈS la ligne d'en-tête
+                    var lastRowUsedInWorksheet = worksheet.LastRowUsed();
+                    int startScanRow = headerRow + 1;
+
+                    if (lastRowUsedInWorksheet != null)
+                    {
+                        for (int rowNum = startScanRow; rowNum <= lastRowUsedInWorksheet.RowNumber(); rowNum++)
+                        {
+                            cancellationToken.ThrowIfCancellationRequested();
+                            var currentCell = worksheet.Cell(rowNum, partnerNameCol);
+                            if (!currentCell.IsEmpty())
+                            {
+                                partnerNameCell = currentCell;
+                                break; // On a trouvé la première cellule non vide
+                            }
                         }
                     }
-                    if (targetColumn != -1) break;
+
+                    if (partnerNameCell != null)
+                    {
+                        data.PartnerNameInFile = partnerNameCell.Value.ToString()?.Trim() ?? string.Empty;
+                        await _logAndSend($"Nom du partenaire extrait du fichier Excel ('{partnerNameCell.Address.ToString()}') : '{data.PartnerNameInFile}'", cancellationToken);
+                    }
+                    else
+                    {
+                        await _logAndSendError($"Aucune cellule non vide trouvée sous l'en-tête '{partnerNameHeader}' dans le fichier '{Path.GetFileName(filePath)}'. Le nom du partenaire n'a pas pu être extrait.", cancellationToken);
+                        data.PartnerNameInFile = "[NOM_PARTENAIRE_NON_TROUVÉ]";
+                    }
                 }
 
-                if (targetColumn == -1)
+
+                // --- 3. Extraire le solde final du fichier Excel (logique inchangée) ---
+                if (balanceCol == -1)
                 {
-                    await _logAndSendError($"L'en-tête '{headerToFind}' n'a pas été trouvé dans le fichier Excel '{Path.GetFileName(filePath)}'.", cancellationToken);
+                    await _logAndSendError($"L'en-tête '{headerToFindBalance}' n'a pas été trouvé dans le fichier Excel '{Path.GetFileName(filePath)}'.", cancellationToken);
                     data.FinalBalance = "[SOLDE_NON_TROUVÉ]";
-                    return data; // Return data even if balance not found, as other fields might be useful
+                    return data; 
                 }
 
-                await _logAndSend($"En-tête '{headerToFind}' trouvé dans la colonne {targetColumn} (ligne {headerRow}). Recherche du solde final...", cancellationToken);
+                await _logAndSend($"En-tête '{headerToFindBalance}' trouvé dans la colonne {balanceCol} (ligne {headerRow}). Recherche du solde final...", cancellationToken);
 
                 decimal? lastFoundBalance = null;
                 IXLCell? lastFoundCell = null;
 
                 var dataLastRowUsed = worksheet.LastRowUsed();
-                int startDataRow = headerRow + 1;
+                int startDataRowForBalance = headerRow + 1; // Start scanning for balance after the header row
 
                 if (dataLastRowUsed != null)
                 {
-                    for (int rowNum = startDataRow; rowNum <= dataLastRowUsed.RowNumber(); rowNum++)
+                    for (int rowNum = startDataRowForBalance; rowNum <= dataLastRowUsed.RowNumber(); rowNum++)
                     {
                         cancellationToken.ThrowIfCancellationRequested();
-                        var cell = worksheet.Cell(rowNum, targetColumn);
+                        var cell = worksheet.Cell(rowNum, balanceCol);
 
                         if (!cell.IsEmpty())
                         {
@@ -185,7 +228,7 @@ public class EmailDataExtractor
                 }
                 else
                 {
-                    await _logAndSendError($"Aucune valeur numérique trouvée sous l'en-tête '{headerToFind}' dans le fichier '{Path.GetFileName(filePath)}'.", cancellationToken);
+                    await _logAndSendError($"Aucune valeur numérique trouvée sous l'en-tête '{headerToFindBalance}' dans le fichier '{Path.GetFileName(filePath)}'.", cancellationToken);
                     data.FinalBalance = "[SOLDE_NON_TROUVÉ]";
                 }
             }
@@ -196,7 +239,7 @@ public class EmailDataExtractor
         }
         catch (Exception ex)
         {
-            await _logAndSendError($"Erreur lors de l'extraction du solde final du fichier Excel '{Path.GetFileName(filePath)}' : {ex.Message}", cancellationToken);
+            await _logAndSendError($"Erreur inattendue lors de l'extraction des données du fichier Excel '{Path.GetFileName(filePath)}' : {ex.Message}", cancellationToken);
             return null;
         }
 
