@@ -1,3 +1,4 @@
+// Fichier : Services/SendEmail.cs (AUCUN CHANGEMENT PAR RAPPORT À VOTRE ORIGINAL)
 using MailKit.Net.Smtp;
 using MailKit.Security;
 using MimeKit;
@@ -104,9 +105,9 @@ public class SendEmail
 
         // Combine all recipients for logging purposes
         var allRecipientsForLogging = (toRecipients ?? Enumerable.Empty<string>())
-                                         .Union(ccRecipients ?? Enumerable.Empty<string>())
-                                         .Union(bccRecipients ?? Enumerable.Empty<string>())
-                                         .ToList();
+                                             .Union(ccRecipients ?? Enumerable.Empty<string>())
+                                             .Union(bccRecipients ?? Enumerable.Empty<string>())
+                                             .ToList();
 
         try
         {
@@ -160,7 +161,7 @@ public class SendEmail
 
             var bodyBuilder = new BodyBuilder
             {
-                HtmlBody = body
+                HtmlBody = body // <--- C'est cette ligne qui fait que le corps est traité comme HTML
             };
 
             if (attachmentFilePaths != null && attachmentFilePaths.Any())

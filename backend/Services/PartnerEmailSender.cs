@@ -1,3 +1,4 @@
+// Fichier : Services/PartnerEmailSender.cs
 using MailKit.Net.Smtp;
 using MailKit.Security;
 using MimeKit;
@@ -12,6 +13,7 @@ using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.SignalR;
 using System.Threading;
 using ExcelFlow.Hubs;
+using ExcelFlow.Utilities;
 
 namespace ExcelFlow.Services;
 
@@ -19,11 +21,25 @@ public class PartnerEmailSender
 {
     private readonly SendEmail _sendEmailService;
     private readonly IHubContext<PartnerFileHub> _hubContext;
+    private readonly EmailDataExtractor _emailDataExtractor;
 
-    public PartnerEmailSender(SendEmail sendEmailService, IHubContext<PartnerFileHub> hubContext)
+    // --- TEMPLATES HARDCODED HERE ---
+    private const string SUBJECT_TEMPLATE = "Objet : Détermination du solde final de [NOM_PARTENAIRE] - [DATE_FICHIER]";
+    // --- NOUVEAU BODY_TEMPLATE avec HTML ---
+    private const string BODY_TEMPLATE = @"
+<p>Bonsoir cher partenaire,</p>
+<p>Merci de trouver en pièce jointe ci-dessous l'analyse de votre compte support pour les journées du <strong>[DATE_OU_INTERVALLE_JOURS_ANALYSE]</strong>, ayant permis d'aboutir au solde final (avant cash out auto) de <span style='color: #f51b1b;'><strong>[SOLDE_FINAL] [CURRENCY]</strong></span>.</p>
+<p>Vous trouverez également les éléments ayant servi de base au calcul de votre solde final, pour les journées du <strong>[DATE_OU_INTERVALLE_JOURS_ANALYSE]</strong>.</p>
+<p>Nous restons disponibles pour toute information complémentaire.</p>
+<p><span style='color: #f51b1b;'><strong>NB :</strong> Prière d'effectuer vos contrôles caisse et compte support à J+1 (dans les 24H) afin de nous remonter toute anomalie constatée pour régularisation, soit à notre niveau, soit au niveau du MTO.</span></p><p>Merci d'accuser réception.</p>
+<p>Cordialement,</p>";
+    // ---------------------------------
+
+    public PartnerEmailSender(SendEmail sendEmailService, IHubContext<PartnerFileHub> hubContext, EmailDataExtractor emailDataExtractor)
     {
         _sendEmailService = sendEmailService;
         _hubContext = hubContext;
+        _emailDataExtractor = emailDataExtractor;
     }
 
     private async Task LogAndSend(string message, CancellationToken cancellationToken = default)
@@ -50,41 +66,26 @@ public class PartnerEmailSender
     {
         public string PartnerName { get; set; } = string.Empty;
         public List<string> Emails { get; set; } = new List<string>();
-        // Ces chaînes seront les noms/sigles en minuscules, sans autre nettoyage.
-        public string SearchableNameFull { get; set; } = string.Empty; // ex: "cecec (cec)" pour "CECEC (CEC)"
-        public string? SearchableNameSigle { get; set; } = null;       // ex: "cec" pour "CECEC (CEC)"
+        public string SearchableNameFull { get; set; } = string.Empty;
+        public string? SearchableNameSigle { get; set; } = null;
     }
 
     public class SentEmailSummary
     {
         public string FileName { get; set; } = string.Empty;
         public string PartnerName { get; set; } = string.Empty;
-        public List<string> RecipientEmails { get; set; } = new List<string>(); // Keep track of TO recipients for summary
-        public List<string> CcRecipientsSent { get; set; } = new List<string>(); // Track actual Cc recipients sent
-        public List<string> BccRecipientsSent { get; set; } = new List<string>(); // Track actual Bcc recipients sent
+        public List<string> RecipientEmails { get; set; } = new List<string>();
+        public List<string> CcRecipientsSent { get; set; } = new List<string>();
+        public List<string> BccRecipientsSent { get; set; } = new List<string>();
     }
 
-    /// <summary>
-    /// Normalise une chaîne en la convertissant en minuscules et en supprimant les accents.
-    /// Les caractères spéciaux et les espaces sont conservés.
-    /// </summary>
-    /// <param name="input">La chaîne à normaliser.</param>
-    /// <returns>La chaîne normalisée.</returns>
     private string NormalizeForComparison(string input)
     {
-        input = input.ToLowerInvariant(); // Convertir en minuscules
-        input = Regex.Replace(input.Normalize(System.Text.NormalizationForm.FormD), @"\p{M}", ""); // Supprimer les accents
+        input = input.ToLowerInvariant();
+        input = Regex.Replace(input.Normalize(System.Text.NormalizationForm.FormD), @"\p{M}", "");
         return input;
     }
 
-    /// <summary>
-    /// Lit les informations des partenaires (Nom, Emails) à partir d'un fichier Excel.
-    /// </summary>
-    /// <param name="partnerEmailFilePath">Chemin complet vers le fichier Excel.</param>
-    /// <param name="cancellationToken">Token d'annulation.</param>
-    /// <returns>Une liste de PartnerInfo.</returns>
-    /// <exception cref="FileNotFoundException">Lancée si le fichier Excel n'est pas trouvé.</exception>
-    /// <exception cref="InvalidOperationException">Lancée si le format du fichier Excel est incorrect, vide, ou les en-têtes requis sont manquants.</exception>
     public List<PartnerInfo> ReadPartnersFromExcel(string partnerEmailFilePath, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -186,7 +187,6 @@ public class PartnerEmailSender
                             }
                             else
                             {
-                                // Normaliser le nom complet du partenaire et potentiellement son sigle
                                 string searchableNameFull = NormalizeForComparison(partnerName);
                                 string? searchableNameSigle = null;
 
@@ -196,10 +196,10 @@ public class PartnerEmailSender
                                     searchableNameSigle = NormalizeForComparison(sigleMatch.Groups[1].Value.Trim());
                                 }
 
-                                partners.Add(new PartnerInfo 
-                                { 
-                                    PartnerName = partnerName, 
-                                    Emails = extractedEmails.Distinct(StringComparer.OrdinalIgnoreCase).ToList(), 
+                                partners.Add(new PartnerInfo
+                                {
+                                    PartnerName = partnerName,
+                                    Emails = extractedEmails.Distinct(StringComparer.OrdinalIgnoreCase).ToList(),
                                     SearchableNameFull = searchableNameFull,
                                     SearchableNameSigle = searchableNameSigle
                                 });
@@ -212,34 +212,16 @@ public class PartnerEmailSender
         return partners;
     }
 
-    /// <summary>
-    /// Envoie des emails à plusieurs partenaires, en analysant d'abord les fichiers générés pour identifier les destinataires.
-    /// Chaque fichier trouvé est envoyé au(x) partenaire(s) dont le nom de fichier contient le nom du partenaire comme une sous-chaîne exacte de "mot entier",
-    /// après normalisation (minuscules, sans accents).
-    /// Un fichier ne peut être envoyé qu'à un seul partenaire.
-    /// </summary>
-    /// <param name="partnerEmailFilePath">Chemin complet vers le fichier Excel contenant les partenaires.</param>
-    /// <param name="generatedFilesFolderPath">Chemin complet vers le dossier contenant les fichiers générés (pièces jointes).</param>
-    /// <param name="subject">Sujet de l'email.</param>
-    /// <param name="body">Corps de l'email (HTML).</param>
-    /// <param name="fromDisplayName">Nom d'affichage de l'expéditeur. (Optionnel)</param>
-    /// <param name="ccRecipients">Liste d'adresses email à mettre en copie carbone (Cc). Optionnel.</param>
-    /// <param name="bccRecipients">Liste d'adresses email à mettre en copie carbone invisible (Bcc). Optionnel.</param>
-    /// <param name="cancellationToken">Token to observe for cancellation requests.</param>
-    /// <returns>Une tâche représentant l'opération d'envoi.</returns>
     public async Task SendEmailsToPartnersWithAttachments(
         string partnerEmailFilePath,
         string generatedFilesFolderPath,
-        string subject,
-        string body,
         string? fromDisplayName = null,
-        List<string>? ccRecipients = null, // AJOUTÉ : Paramètre Cc
-        List<string>? bccRecipients = null, // AJOUTÉ : Paramètre Bcc
+        List<string>? ccRecipients = null,
+        List<string>? bccRecipients = null,
         CancellationToken cancellationToken = default)
     {
         await LogAndSend($"Démarrage du processus d'envoi d'emails basé sur les fichiers générés...", cancellationToken);
 
-        // --- PARTIE LECTURE DES PARTENAIRES ---
         await LogAndSend($"Lecture des partenaires depuis : {partnerEmailFilePath}...", cancellationToken);
         List<PartnerInfo> partners;
         try
@@ -257,7 +239,7 @@ public class PartnerEmailSender
                     {
                         searchableNames += $" (Sigle: '{p.SearchableNameSigle}')";
                     }
-                    await LogAndSend($"  - Partenaire: '{p.PartnerName}' | Emails: {string.Join(", ", p.Emails)} | Noms de recherche normalisés: {searchableNames}", cancellationToken);
+                    await LogAndSend($"   - Partenaire: '{p.PartnerName}' | Emails: {string.Join(", ", p.Emails)} | Noms de recherche normalisés: {searchableNames}", cancellationToken);
                 }
             }
             else
@@ -282,7 +264,6 @@ public class PartnerEmailSender
             return;
         }
 
-        // --- PARTIE ANALYSE DES FICHIERS GÉNÉRÉS ---
         await LogAndSend($"Analyse du dossier des fichiers générés : {generatedFilesFolderPath}...", cancellationToken);
         if (!Directory.Exists(generatedFilesFolderPath))
         {
@@ -299,11 +280,9 @@ public class PartnerEmailSender
             return;
         }
 
-        // --- Suivi des fichiers déjà affectés et récapitulatif ---
         var processedFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var sentEmailSummaries = new List<SentEmailSummary>(); // Pour le récapitulatif final
+        var sentEmailSummaries = new List<SentEmailSummary>();
 
-        // --- PARTIE TRAITEMENT ET ENVOI DES EMAILS ---
         int filesProcessedCount = 0;
         foreach (var filePath in allGeneratedFiles)
         {
@@ -311,7 +290,7 @@ public class PartnerEmailSender
 
             if (processedFiles.Contains(filePath))
             {
-                await LogAndSend($"  Fichier '{Path.GetFileName(filePath)}' déjà traité pour un autre partenaire. Ignoré.", cancellationToken);
+                await LogAndSend($"   Fichier '{Path.GetFileName(filePath)}' déjà traité pour un autre partenaire. Ignoré.", cancellationToken);
                 await LogAndSend("---", cancellationToken);
                 continue;
             }
@@ -320,30 +299,18 @@ public class PartnerEmailSender
             string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(filePath);
             await LogAndSend($"Traitement du fichier {filesProcessedCount}/{allGeneratedFiles.Count}: '{Path.GetFileName(filePath)}'", cancellationToken);
 
-            // Normaliser le nom du fichier pour la comparaison (minuscules, sans accents)
             string normalizedFileName = NormalizeForComparison(fileNameWithoutExtension);
 
             PartnerInfo? foundPartner = null;
 
-            // Parcourir les partenaires pour trouver une correspondance exacte avec frontière de mot
             foreach (var partner in partners)
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                // DÉFINITION DE LA CORRESPONDANCE
-                // Utiliser Regex avec \b (frontière de mot) pour une correspondance exacte de mot/séquence.
-                // Regex.Escape est crucial au cas où le nom du partenaire contiendrait des caractères spéciaux regex.
-                // RegexOptions.CultureInvariant pour des correspondances indépendantes des paramètres culturels.
-                // RegexOptions.IgnoreCase est géré par le NormalizeForComparison en amont.
-
                 bool matched = false;
 
-                // Tenter de faire correspondre le nom complet
                 if (!string.IsNullOrWhiteSpace(partner.SearchableNameFull))
                 {
-                    // La regex \b{pattern}\b cherche le pattern comme un mot entier.
-                    // Une "frontière de mot" (\b) est la position entre un caractère alphanumérique ou underscore (\w)
-                    // et un caractère non-alphanumérique/non-underscore (\W), ou le début/fin de la chaîne.
                     var regexFull = new Regex($@"\b{Regex.Escape(partner.SearchableNameFull)}\b", RegexOptions.CultureInvariant);
                     if (regexFull.IsMatch(normalizedFileName))
                     {
@@ -351,7 +318,6 @@ public class PartnerEmailSender
                     }
                 }
 
-                // Si pas de match avec le nom complet et qu'un sigle existe, tenter de matcher le sigle
                 if (!matched && partner.SearchableNameSigle != null && !string.IsNullOrWhiteSpace(partner.SearchableNameSigle))
                 {
                     var regexSigle = new Regex($@"\b{Regex.Escape(partner.SearchableNameSigle)}\b", RegexOptions.CultureInvariant);
@@ -364,26 +330,46 @@ public class PartnerEmailSender
                 if (matched)
                 {
                     foundPartner = partner;
-                    break; // Un fichier ne doit être envoyé qu'à un seul partenaire. Le premier match "mot entier" gagne.
+                    break;
                 }
             }
 
             if (foundPartner != null && foundPartner.Emails.Any())
             {
-                await LogAndSend($"  Fichier '{Path.GetFileName(filePath)}' contient le nom/sigle exact et ordonné du partenaire '{foundPartner.PartnerName}'.", cancellationToken);
-                await LogAndSend($"  Adresses email cibles pour '{foundPartner.PartnerName}': {string.Join(", ", foundPartner.Emails)}", cancellationToken);
-                await LogAndSend($"  Envoi de l'email à {foundPartner.PartnerName} avec le fichier '{Path.GetFileName(filePath)}' en pièce jointe.", cancellationToken);
+                await LogAndSend($"   Fichier '{Path.GetFileName(filePath)}' contient le nom/sigle exact et ordonné du partenaire '{foundPartner.PartnerName}'.", cancellationToken);
+                await LogAndSend($"   Adresses email cibles pour '{foundPartner.PartnerName}': {string.Join(", ", foundPartner.Emails)}", cancellationToken);
 
-                // Appel au service SendEmail avec les paramètres Cc et Bcc
+                var emailData = await _emailDataExtractor.ExtractEmailDataFromAttachment(filePath, cancellationToken);
+                if (emailData == null)
+                {
+                    await LogAndSendError($"Impossible d'extraire les données dynamiques pour l'email du fichier '{Path.GetFileName(filePath)}'. Email non envoyé.", cancellationToken);
+                    await LogAndSend("---", cancellationToken);
+                    continue;
+                }
+
+                // --- Dynamic subject and body formatting using hardcoded templates ---
+                string finalSubject = SUBJECT_TEMPLATE
+                    .Replace("[NOM_PARTENAIRE]", emailData.PartnerNameInFile)
+                    .Replace("[DATE_FICHIER]", emailData.DateString);
+
+                string finalBody = BODY_TEMPLATE
+                    .Replace("[DATE_OU_INTERVALLE_JOURS_ANALYSE]", emailData.DateString)
+                    .Replace("[SOLDE_FINAL]", emailData.FinalBalance)
+                    .Replace("[CURRENCY]", emailData.Currency);
+
+
+                await LogAndSend($"   Envoi de l'email à {foundPartner.PartnerName} avec le fichier '{Path.GetFileName(filePath)}' en pièce jointe.", cancellationToken);
+
+                // --- APPEL CORRECT DE SendEmailAsync SANS 'isHtml' ---
                 bool sent = await _sendEmailService.SendEmailAsync(
-                    subject: subject,
-                    body: body,
+                    subject: finalSubject,
+                    body: finalBody,
                     toRecipients: foundPartner.Emails,
-                    ccRecipients: ccRecipients, // PASSAGE DES PARAMÈTRES CC
-                    bccRecipients: bccRecipients, // PASSAGE DES PARAMÈTRES BCC
+                    ccRecipients: ccRecipients,
+                    bccRecipients: bccRecipients,
                     fromDisplayName: fromDisplayName,
                     attachmentFilePaths: new List<string> { filePath },
-                    cancellationToken: cancellationToken
+                    cancellationToken: cancellationToken // Maintenant, le CancellationToken est le dernier paramètre
                 );
 
                 if (sent)
@@ -395,8 +381,8 @@ public class PartnerEmailSender
                         FileName = Path.GetFileName(filePath),
                         PartnerName = foundPartner.PartnerName,
                         RecipientEmails = foundPartner.Emails.ToList(),
-                        CcRecipientsSent = ccRecipients?.ToList() ?? new List<string>(), // Capture les Cc effectivement envoyés
-                        BccRecipientsSent = bccRecipients?.ToList() ?? new List<string>() // Capture les Bcc effectivement envoyés
+                        CcRecipientsSent = ccRecipients?.ToList() ?? new List<string>(),
+                        BccRecipientsSent = bccRecipients?.ToList() ?? new List<string>()
                     });
                 }
                 else
@@ -408,32 +394,31 @@ public class PartnerEmailSender
             {
                 if (foundPartner != null && !foundPartner.Emails.Any())
                 {
-                    await LogAndSendError($"  Partenaire '{foundPartner.PartnerName}' trouvé pour le fichier '{Path.GetFileName(filePath)}' mais sans adresse email valide. Email non envoyé.", cancellationToken);
+                    await LogAndSendError($"   Partenaire '{foundPartner.PartnerName}' trouvé pour le fichier '{Path.GetFileName(filePath)}' mais sans adresse email valide. Email non envoyé.", cancellationToken);
                 }
                 else
                 {
-                    await LogAndSend($"  Aucun partenaire dont le nom/sigle exact et ordonné est inclus comme un mot entier dans le fichier '{Path.GetFileName(filePath)}'. Le fichier sera ignoré.", cancellationToken);
+                    await LogAndSend($"   Aucun partenaire dont le nom/sigle exact et ordonné est inclus comme un mot entier dans le fichier '{Path.GetFileName(filePath)}'. Le fichier sera ignoré.", cancellationToken);
                 }
             }
             await LogAndSend("---", cancellationToken);
         }
         await LogAndSend("Processus d'envoi d'emails basé sur les fichiers générés terminé.", cancellationToken);
 
-        // --- Récapitulatif final ---
         await LogAndSend("\n--- RÉCAPITULATIF DES EMAILS ENVOYÉS ---", cancellationToken);
         if (sentEmailSummaries.Any())
         {
             await LogAndSend($"Total de fichiers envoyés : {sentEmailSummaries.Count}", cancellationToken);
             foreach (var summary in sentEmailSummaries)
             {
-                await LogAndSend($"  - Fichier: '{summary.FileName}' envoyé à Partenaire: '{summary.PartnerName}' (To: {string.Join(", ", summary.RecipientEmails)})", cancellationToken);
+                await LogAndSend($"   - Fichier: '{summary.FileName}' envoyé à Partenaire: '{summary.PartnerName}' (To: {string.Join(", ", summary.RecipientEmails)})", cancellationToken);
                 if (summary.CcRecipientsSent.Any())
                 {
-                     await LogAndSend($"    Cc: {string.Join(", ", summary.CcRecipientsSent)}", cancellationToken);
+                    await LogAndSend($"     Cc: {string.Join(", ", summary.CcRecipientsSent)}", cancellationToken);
                 }
                 if (summary.BccRecipientsSent.Any())
                 {
-                    await LogAndSend($"    Bcc: {string.Join(", ", summary.BccRecipientsSent)} (Non visible par les destinataires To/Cc)", cancellationToken);
+                    await LogAndSend($"     Bcc: {string.Join(", ", summary.BccRecipientsSent)} (Non visible par les destinataires To/Cc)", cancellationToken);
                 }
             }
         }

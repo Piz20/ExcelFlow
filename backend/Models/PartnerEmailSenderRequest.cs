@@ -1,26 +1,22 @@
 // Fichier : Models/PartnerEmailSenderRequest.cs
+using System.ComponentModel.DataAnnotations;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations; // For [Required]
 
 namespace ExcelFlow.Models;
 
 public class PartnerEmailSenderRequest
 {
-    [Required(ErrorMessage = "Le chemin du fichier Excel des adresses partenaires est obligatoire.")]
+    [Required(ErrorMessage = "Le chemin du fichier Excel des adresses partenaires est requis.")]
     public string PartnerEmailFilePath { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Le chemin du dossier des fichiers générés est obligatoire.")]
+    [Required(ErrorMessage = "Le chemin du dossier des fichiers générés est requis.")]
     public string GeneratedFilesFolderPath { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Le sujet de l'email est obligatoire.")]
-    public string Subject { get; set; } = string.Empty;
-
-    [Required(ErrorMessage = "Le corps de l'email est obligatoire.")]
-    public string Body { get; set; } = string.Empty;
+    // Les propriétés SubjectTemplate et BodyTemplate sont supprimées car elles ne sont plus fournies par le client.
 
     public string? FromDisplayName { get; set; }
 
-    // AJOUTÉ : Listes pour Cc et Bcc
-    public List<string>? CcRecipients { get; set; } = new List<string>(); // Initialize to avoid null reference if not provided
-    public List<string>? BccRecipients { get; set; } = new List<string>(); // Initialize to avoid null reference if not provided
+    public List<string>? CcRecipients { get; set; } // Liste d'adresses email pour la copie carbone (Cc)
+
+    public List<string>? BccRecipients { get; set; } // Liste d'adresses email pour la copie carbone invisible (Bcc)
 }

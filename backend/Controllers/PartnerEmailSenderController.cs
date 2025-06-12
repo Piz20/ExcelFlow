@@ -1,10 +1,11 @@
 // Fichier : Controllers/PartnerEmailSenderController.cs
 using Microsoft.AspNetCore.Mvc;
 using ExcelFlow.Services;
-using ExcelFlow.Models; // Assurez-vous que ce namespace est correct pour PartnerEmailSenderRequest
+using ExcelFlow.Models;
 using System.Threading.Tasks;
 using System.Threading;
-using System.IO; // Pour File.Exists et Directory.Exists
+using System.IO;
+using Microsoft.AspNetCore.Http; // Nécessaire pour StatusCodes
 
 namespace ExcelFlow.Controllers;
 
@@ -33,13 +34,9 @@ public class PartnerEmailSenderController : ControllerBase
     {
         if (!ModelState.IsValid)
         {
-            // ModelState.IsValid gérera les erreurs des attributs [Required] dans le DTO
             return BadRequest(ModelState);
         }
 
-        // Vérification basique de l'existence des chemins
-        // Utilisez System.IO.Path.Combine pour construire des chemins robustes si les parties proviennent de l'extérieur.
-        // Ici, on suppose que les chemins complets sont déjà fournis.
         if (!System.IO.File.Exists(request.PartnerEmailFilePath))
         {
             return BadRequest(new { Message = $"Le fichier Excel des adresses partenaires est introuvable : {request.PartnerEmailFilePath}" });
@@ -55,11 +52,10 @@ public class PartnerEmailSenderController : ControllerBase
             await _partnerEmailSender.SendEmailsToPartnersWithAttachments(
                 partnerEmailFilePath: request.PartnerEmailFilePath,
                 generatedFilesFolderPath: request.GeneratedFilesFolderPath,
-                subject: request.Subject,
-                body: request.Body,
+                // Le sujet et le corps ne sont plus passés ici, ils sont obtenus via la configuration interne du service.
                 fromDisplayName: request.FromDisplayName,
-                ccRecipients: request.CcRecipients,   // PASSAGE DES ADRESSES CC
-                bccRecipients: request.BccRecipients, // PASSAGE DES ADRESSES BCC
+                ccRecipients: request.CcRecipients,
+                bccRecipients: request.BccRecipients,
                 cancellationToken: cancellationToken
             );
 
@@ -79,8 +75,6 @@ public class PartnerEmailSenderController : ControllerBase
         }
         catch (Exception ex)
         {
-            // Pour des raisons de sécurité, en production, ne pas exposer ex.ToString() directement.
-            // Utilisez un logger pour enregistrer les détails complets de l'exception.
             return StatusCode(StatusCodes.Status500InternalServerError, new { Message = $"Une erreur inattendue est survenue : {ex.Message}", Details = ex.ToString() });
         }
     }

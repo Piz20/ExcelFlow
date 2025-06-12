@@ -2,9 +2,10 @@ using ExcelFlow.Hubs;
 using ExcelFlow.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting; // Souvent implicite avec .NET 6+, mais bon de le garder
-using Microsoft.Extensions.Configuration; // Nécessaire si vous l'injectez directement, mais builder.Configuration est suffisant.
-
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Configuration; // Not strictly needed if using builder.Configuration directly
+using ExcelFlow.Utilities; // Pour EmailDataExtractor
+using Microsoft.AspNetCore.SignalR; // Pour IHubContext<PartnerFileHub>
 var builder = WebApplication.CreateBuilder(args);
 
 // --- Configuration des Services (Add services to the container.) ---
@@ -12,7 +13,21 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Services spécifiques à l'application
 builder.Services.AddScoped<SendEmail>();
+
+// --- NOUVEAU : Enregistrement de EmailDataExtractor ---
+// EmailDataExtractor a besoin d'un IHubContext<PartnerFileHub> pour ses fonctions de log.
+// Nous allons l'enregistrer en tant que Scoped.
+builder.Services.AddScoped<EmailDataExtractor>(provider =>
+{
+    // Obtenez le IHubContext via le fournisseur de services
+    var hubContext = provider.GetRequiredService<IHubContext<PartnerFileHub>>();
+    // Créez une instance de EmailDataExtractor en lui passant le hubContext
+    return new EmailDataExtractor(hubContext);
+});
+
+// PartnerEmailSender dépend maintenant de EmailDataExtractor, donc il doit être enregistré après lui.
 builder.Services.AddScoped<PartnerEmailSender>();
+
 builder.Services.AddScoped<PartnerFileGenerator>(); // Votre service de génération de fichiers
 
 // Services ASP.NET Core
@@ -23,7 +38,6 @@ builder.Services.AddEndpointsApiExplorer(); // Nécessaire pour Swagger/OpenAPI
 builder.Services.AddSignalR(); // Ajoute les services nécessaires pour SignalR
 
 // Configuration des URLs (principalement défini via launchSettings.json, mais peut être surchargé ici)
-// Garder cette ligne si vous souhaitez forcer les URLs ou pour des environnements spécifiques.
 builder.WebHost.UseUrls("http://localhost:5297", "https://localhost:7274");
 
 
@@ -31,7 +45,6 @@ var app = builder.Build();
 
 // --- Configuration du Pipeline de Requêtes HTTP (Configure the HTTP request pipeline.) ---
 // L'ordre des middlewares ici est CRUCIAL !
-
 
 // Redirection HTTP vers HTTPS pour la sécurité
 app.UseHttpsRedirection();
