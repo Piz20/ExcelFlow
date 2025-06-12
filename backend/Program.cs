@@ -5,68 +5,82 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Configuration; // Not strictly needed if using builder.Configuration directly
 using ExcelFlow.Utilities; // Pour EmailDataExtractor
+using ExcelFlow.Models; // Pour EmailData
 using Microsoft.AspNetCore.SignalR; // Pour IHubContext<PartnerFileHub>
+// Note: EmailData is now in ExcelFlow.Models, so we don't need a direct using for it here.
+// The services that use it (EmailDataExtractor, EmailContentBuilder) will have their own using statements.
+
+// No direct using for IHubContext<PartnerFileHub> needed here, as it's used within AddScoped lambda
+
 var builder = WebApplication.CreateBuilder(args);
 
 // --- Configuration des Services (Add services to the container.) ---
 // C'est ici que tous les services sont enregistrés dans le conteneur d'injection de dépendances.
 
 // Services spécifiques à l'application
+
+// SendEmail Service
 builder.Services.AddScoped<SendEmail>();
 
-// --- NOUVEAU : Enregistrement de EmailDataExtractor ---
-// EmailDataExtractor a besoin d'un IHubContext<PartnerFileHub> pour ses fonctions de log.
-// Nous allons l'enregistrer en tant que Scoped.
+// PartnerExcelReader Service (Assumed to be simple instantiation, no complex dependencies shown)
+builder.Services.AddScoped<PartnerExcelReader>();
+
+// EmailContentBuilder Service (Assumed to be simple instantiation, no complex dependencies shown)
+builder.Services.AddScoped<EmailContentBuilder>();
+
+// EmailDataExtractor has been modified to take an IHubContext for logging purposes.
 builder.Services.AddScoped<EmailDataExtractor>(provider =>
 {
-    // Obtenez le IHubContext via le fournisseur de services
+    // Get the IHubContext via the service provider
     var hubContext = provider.GetRequiredService<IHubContext<PartnerFileHub>>();
-    // Créez une instance de EmailDataExtractor en lui passant le hubContext
+    // Create an instance of EmailDataExtractor, passing the hubContext
     return new EmailDataExtractor(hubContext);
 });
 
-// PartnerEmailSender dépend maintenant de EmailDataExtractor, donc il doit être enregistré après lui.
+// PartnerEmailSender depends on SendEmail, EmailDataExtractor, PartnerExcelReader, and EmailContentBuilder.
+// Ensure all its dependencies are registered *before* PartnerEmailSender itself.
 builder.Services.AddScoped<PartnerEmailSender>();
 
-builder.Services.AddScoped<PartnerFileGenerator>(); // Votre service de génération de fichiers
+// Your file generation service
+builder.Services.AddScoped<PartnerFileGenerator>();
 
 // Services ASP.NET Core
-builder.Services.AddControllers(); // Ajoute la prise en charge des contrôleurs MVC pour les APIs
-builder.Services.AddEndpointsApiExplorer(); // Nécessaire pour Swagger/OpenAPI
+builder.Services.AddControllers(); // Adds MVC controllers support for APIs
+builder.Services.AddEndpointsApiExplorer(); // Needed for Swagger/OpenAPI
 
-// Services SignalR
-builder.Services.AddSignalR(); // Ajoute les services nécessaires pour SignalR
+// SignalR Services
+builder.Services.AddSignalR(); // Adds the necessary services for SignalR
 
-// Configuration des URLs (principalement défini via launchSettings.json, mais peut être surchargé ici)
+// URL Configuration (mainly defined via launchSettings.json, but can be overridden here)
 builder.WebHost.UseUrls("http://localhost:5297", "https://localhost:7274");
 
 
 var app = builder.Build();
 
 // --- Configuration du Pipeline de Requêtes HTTP (Configure the HTTP request pipeline.) ---
-// L'ordre des middlewares ici est CRUCIAL !
+// The order of middleware here is CRUCIAL!
 
-// Redirection HTTP vers HTTPS pour la sécurité
+// HTTP to HTTPS redirection for security
 app.UseHttpsRedirection();
 
-// Active le service de fichiers statiques (pour servir des fichiers comme HTML, CSS, JS depuis wwwroot)
+// Enables static files service (to serve files like HTML, CSS, JS from wwwroot)
 app.UseStaticFiles();
 
-// Active le routage pour faire correspondre les requêtes aux endpoints
+// Enables routing to match requests to endpoints
 app.UseRouting();
 
-// Configure l'autorisation (doit venir après UseRouting et UseAuthentication si présent)
+// Configures authorization (must come after UseRouting and UseAuthentication if present)
 app.UseAuthorization();
-// Si vous avez de l'authentification, décommentez et placez 'app.UseAuthentication();' ICI, AVANT UseAuthorization.
+// If you have authentication, uncomment and place 'app.UseAuthentication();' HERE, BEFORE UseAuthorization.
 
-// --- Mapping des endpoints ---
-// Associe les requêtes entrantes aux contrôleurs et aux hubs SignalR.
+// --- Mapping endpoints ---
+// Maps incoming requests to controllers and SignalR hubs.
 
-// Mappe les contrôleurs d'API
+// Maps API controllers
 app.MapControllers();
 
-// Mappe le hub SignalR à son chemin d'accès
+// Maps the SignalR hub to its access path
 app.MapHub<PartnerFileHub>("/partnerFileHub");
 
-// --- Démarrage de l'application ---
+// --- Application startup ---
 app.Run();

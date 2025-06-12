@@ -1,3 +1,4 @@
+// Fichier : Utilities/EmailDataExtractor.cs
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -8,6 +9,7 @@ using System.Threading.Tasks;
 using ClosedXML.Excel;
 using Microsoft.AspNetCore.SignalR;
 using ExcelFlow.Hubs;
+using ExcelFlow.Models; // <<< ADD THIS LINE to reference the new EmailData class
 
 namespace ExcelFlow.Utilities;
 
@@ -46,15 +48,8 @@ public class EmailDataExtractor
         _logAndSendError = logAndSendError ?? ((msg, token) => { Console.Error.WriteLine($"[{DateTime.Now:HH:mm:ss}] ERREUR: {msg}"); return Task.CompletedTask; });
     }
 
-    public class ExtractedEmailData
-    {
-        public string DateString { get; set; } = string.Empty;
-        public string FinalBalance { get; set; } = string.Empty;
-        public string Currency { get; set; } = "XAF";
-        public string PartnerNameInFile { get; set; } = string.Empty;
-    }
 
-    public async Task<ExtractedEmailData?> ExtractEmailDataFromAttachment(string filePath, CancellationToken cancellationToken = default)
+    public async Task<EmailData?> ExtractEmailDataFromAttachment(string filePath, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
@@ -64,14 +59,12 @@ public class EmailDataExtractor
             return null;
         }
 
-        var data = new ExtractedEmailData();
+        var data = new EmailData(); // <<< Use EmailData
         string fileName = Path.GetFileNameWithoutExtension(filePath);
         await _logAndSend($"Analyse du nom de fichier pour extraction : '{fileName}'", cancellationToken);
 
         // --- 1. Extraire la date/intervalle du nom du fichier ---
-        // Nouveau pattern pour gérer tous les formats de date (JJ MM AA/AAAA, JJ.MM.AA/AAAA, JJ/MM/AA/AAAA)
-        // en utilisant '[\s./]' pour matcher espace, point ou slash comme séparateur.
-        string datePattern = @"\d{2}[\s./]\d{2}[\s./](?:\d{4}|\d{2})"; // JJ.MM.AAAA ou JJ.MM.AA
+        string datePattern = @"\d{2}[\s./]\d{2}[\s./](?:\d{4}|\d{2})";
         var dateMatch = Regex.Match(fileName, $@"du\s+({datePattern})(?:\s+au\s+({datePattern}))?", RegexOptions.IgnoreCase);
 
         if (dateMatch.Success)
@@ -96,7 +89,6 @@ public class EmailDataExtractor
         }
 
         // --- 2. Extraire le nom du partenaire du nom du fichier ---
-        // Le pattern précédent est maintenu.
         var partnerNameMatch = Regex.Match(fileName, @"COMPTE SUPPORT\s+([^d]+)\s+du", RegexOptions.IgnoreCase);
 
         if (partnerNameMatch.Success && partnerNameMatch.Groups.Count > 1)
@@ -150,7 +142,7 @@ public class EmailDataExtractor
                 {
                     await _logAndSendError($"L'en-tête '{headerToFind}' n'a pas été trouvé dans le fichier Excel '{Path.GetFileName(filePath)}'.", cancellationToken);
                     data.FinalBalance = "[SOLDE_NON_TROUVÉ]";
-                    return data;
+                    return data; // Return data even if balance not found, as other fields might be useful
                 }
 
                 await _logAndSend($"En-tête '{headerToFind}' trouvé dans la colonne {targetColumn} (ligne {headerRow}). Recherche du solde final...", cancellationToken);
@@ -174,13 +166,13 @@ public class EmailDataExtractor
                             {
                                 lastFoundBalance = cellValue;
                                 lastFoundCell = cell;
-                                await _logAndSend($"   Valeur numérique trouvée à {cell.Address.ToString()}: {cellValue}", cancellationToken);
+                                await _logAndSend($"    Valeur numérique trouvée à {cell.Address.ToString()}: {cellValue}", cancellationToken);
                             }
                             else if (decimal.TryParse(cell.Value.ToString()?.Trim().Replace('.', ','), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.GetCultureInfo("fr-FR"), out cellValue))
                             {
                                 lastFoundBalance = cellValue;
                                 lastFoundCell = cell;
-                                await _logAndSend($"   Valeur chaîne numérique trouvée (parsed) à {cell.Address.ToString()}: {cellValue}", cancellationToken);
+                                await _logAndSend($"    Valeur chaîne numérique trouvée (parsed) à {cell.Address.ToString()}: {cellValue}", cancellationToken);
                             }
                         }
                     }
