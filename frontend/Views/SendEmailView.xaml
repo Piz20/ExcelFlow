@@ -3,13 +3,174 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:ExcelFlow.Views"
              mc:Ignorable="d"
-             d:DesignHeight="450" d:DesignWidth="800">
-    <Grid Background="LightBlue">
-        <TextBlock Text="Vue d'Envoi d'Email"
-                   FontSize="24"
+             d:DesignHeight="550" d:DesignWidth="680">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0"
+                   Text="ExcelFlow - Envoi d'Emails aux Partenaires"
+                   FontSize="20"
                    FontWeight="Bold"
-                   HorizontalAlignment="Center"
-                   VerticalAlignment="Center"/>
+                   Margin="0 0 0 20"/>
+
+        <StackPanel Grid.Row="1"
+                    Orientation="Vertical"
+                    Margin="0 0 0 20">
+            <Border BorderBrush="Gray"
+                    BorderThickness="1"
+                    Padding="10"
+                    Margin="0 0 0 10"
+                    CornerRadius="5">
+                <DockPanel>
+                    <TextBlock Text="Dossier des fichiers partenaires générés :"
+                               FontWeight="Bold"
+                               Background="White"
+                               DockPanel.Dock="Top"
+                               Margin="0 0 0 5"/>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBox x:Name="GeneratedFilesFolderTextBox" Width="450"/>
+                        <Button x:Name="BrowseGeneratedFilesButton"             Content="Sélectionner"
+                                Width="100"
+                                Margin="10 0 0 0"
+                                Click="BrowseGeneratedFilesButton_Click"/>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <Border BorderBrush="Gray"
+                    BorderThickness="1"
+                    Padding="10"
+                    Margin="0 0 0 10"
+                    CornerRadius="5">
+                <DockPanel>
+                    <TextBlock Text="Fichier des mails des partenaires (Excel) :"
+                               FontWeight="Bold"
+                               Background="White"
+                               DockPanel.Dock="Top"
+                               Margin="0 0 0 5"/>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBox x:Name="PartnerEmailFilePathTextBox" Width="450"/>
+                        <Button x:Name="BrowsePartnerEmailFileButton"             Content="Sélectionner"
+                                Width="100"
+                                Margin="10 0 0 0"
+                                Click="BrowsePartnerEmailFileButton_Click"/>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <Border BorderBrush="Gray"
+                    BorderThickness="1"
+                    Padding="10"
+                    Margin="0 0 0 10"
+                    CornerRadius="5">
+                <DockPanel>
+                    <TextBlock Text="Nom d'affichage de l'expéditeur (From) :"
+                               FontWeight="Bold"
+                               Background="White"
+                               DockPanel.Dock="Top"
+                               Margin="0 0 0 5"/>
+                    <TextBox x:Name="FromDisplayNameTextBox" Width="450"/>
+                </DockPanel>
+            </Border>
+
+            <Border BorderBrush="Gray"
+                    BorderThickness="1"
+                    Padding="10"
+                    Margin="0 0 0 10"
+                    CornerRadius="5">
+                <DockPanel>
+                    <TextBlock Text="Destinataires CC (facultatif, séparés par ;) :"
+                               FontWeight="Bold"
+                               Background="White"
+                               DockPanel.Dock="Top"
+                               Margin="0 0 0 5"/>
+                    <TextBox x:Name="CcRecipientsTextBox" Width="450"/>
+                </DockPanel>
+            </Border>
+
+            <Border BorderBrush="Gray"
+                    BorderThickness="1"
+                    Padding="10"
+                    CornerRadius="5">
+                <DockPanel>
+                    <TextBlock Text="Destinataires BCC (facultatif, séparés par ;) :"
+                               FontWeight="Bold"
+                               Background="White"
+                               DockPanel.Dock="Top"
+                               Margin="0 0 0 5"/>
+                    <TextBox x:Name="BccRecipientsTextBox" Width="450"/>
+                </DockPanel>
+            </Border>
+        </StackPanel>
+
+        <Grid Grid.Row="3">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <Border Grid.Row="0"
+                    BorderBrush="Black"
+                    BorderThickness="1"
+                    CornerRadius="5"
+                    Margin="0 0 0 10"
+                    Background="#FFF9F9F9">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <TextBox x:Name="TxtLogs"
+                             FontFamily="Consolas"
+                             FontSize="12"
+                             IsReadOnly="True"
+                             TextWrapping="Wrap"
+                             VerticalScrollBarVisibility="Auto"
+                             AcceptsReturn="True"/>
+                </ScrollViewer>
+            </Border>
+
+            <StackPanel Grid.Row="1"
+                        Orientation="Horizontal"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Center"
+                        Margin="0 5 0 0">
+                <ProgressBar x:Name="ProgressBar"
+                             Width="200"
+                             Height="20"
+                             Visibility="Collapsed"
+                             Margin="0 0 10 0"/>
+
+                <TextBlock x:Name="ProgressTextBlock"
+                           Text="0%"
+                           VerticalAlignment="Center"
+                           Visibility="Collapsed"
+                           Margin="0 0 10 0"/>
+
+                <TextBlock x:Name="ProgressMessageTextBlock"
+                           Text="En attente..."
+                           VerticalAlignment="Center"
+                           Margin="0 0 10 0"
+                           FontStyle="Italic"
+                           Visibility="Collapsed"/>
+
+                <Button x:Name="StartSendingButton"
+                        Content="Démarrer l'envoi"
+                        Width="150"
+                        Margin="0 0 10 0"
+                        Click="StartSendingButton_Click"/>
+
+                <Button x:Name="CancelSendingButton"
+                        Content="Annuler"
+                        Width="100"
+                        Background="#E74C3C"
+                        Foreground="White"
+                        FontWeight="Bold"
+                        Click="CancelSendingButton_Click"/>
+            </StackPanel>
+        </Grid>
     </Grid>
 </UserControl>
