@@ -29,7 +29,6 @@ public class EmailContentBuilder
         return GlobalConstants.BODY_TEMPLATE
             .Replace("[JOURNEE_OU_JOURNEES_DU]", dateDescriptor)
             .Replace("[DATE_OU_INTERVALLE_JOURS_ANALYSE]", emailData.DateString)
-            .Replace("[SOLDE_FINAL]", emailData.FinalBalance)
-            .Replace("[CURRENCY]", emailData.Currency);
+            .Replace("[SOLDE_FINAL]", emailData.FinalBalance);
     }
 }

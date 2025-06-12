@@ -13,15 +13,16 @@ using System.Linq;
 
 // Références vers vos projets de modèles et de services
 using ExcelFlow.Models;
-using ExcelFlow.Services; 
+using ExcelFlow.Services;
 using WpfMsgBox = System.Windows.MessageBox; // Alias for System.Windows.MessageBox
+using ExcelFlow.Utilities; // IMPORTANT : Ajoutez cette ligne pour accéder à AppConstants
 
 namespace ExcelFlow.Views
 {
     public partial class SendEmailView : WpfControls.UserControl
     {
         private readonly HubConnection _hubConnection;
-        private readonly SendEmailService _emailSendingService;
+        private readonly SendEmailService _sendEmailService;
         private CancellationTokenSource? _cts;
 
         private string _generatedFilesFolderPath = "";
@@ -31,12 +32,14 @@ namespace ExcelFlow.Views
         {
             InitializeComponent();
 
-            _emailSendingService = new SendEmailService("https://localhost:7274"); // Vérifiez l'URL
-
+            _sendEmailService = new SendEmailService("https://localhost:7274"); // Vérifiez l'URL
             _hubConnection = new HubConnectionBuilder()
                 .WithUrl("https://localhost:7274/partnerFileHub") // Vérifiez l'URL du hub
                 .WithAutomaticReconnect()
                 .Build();
+
+            // >>> MODIFICATION ICI : Pré-remplir le TextBox avec la constante
+            FromDisplayNameTextBox.Text = AppConstants.DefaultFromDisplayName;
 
             // Initialisation des visibilités des éléments de progression
             ProgressBar.Visibility = Visibility.Collapsed;
@@ -60,17 +63,11 @@ namespace ExcelFlow.Views
                 {
                     ProgressBar.Visibility = Visibility.Visible;
                     ProgressTextBlock.Visibility = Visibility.Visible;
-                    // Ligne commentée pour ne plus afficher le message de progression à côté du pourcentage
-                    // ProgressMessageTextBlock.Visibility = Visibility.Visible; 
-
                     ProgressBar.Minimum = 0;
                     ProgressBar.Maximum = data.Total > 0 ? data.Total : 1;
                     ProgressBar.Value = data.Current;
                     ProgressTextBlock.Text = $"{data.Percentage}%";
-                    // Ligne commentée pour ne plus afficher le message de progression à côté du pourcentage
-                    // ProgressMessageTextBlock.Text = data.Message ?? ""; 
-                    
-                    AppendLog(data.Message ?? ""); // Le message détaillé est toujours ajouté aux logs
+                    AppendLog(data.Message ?? "");
                 });
             });
 
@@ -140,11 +137,37 @@ namespace ExcelFlow.Views
             }
         }
 
-        // MODIFIÉ : Pour écrire dans un TextBox nommé TxtLogs au lieu d'un ListBox
         private void AppendLog(string message)
         {
-            TxtLogs.AppendText(message + Environment.NewLine); // Ajoute le message avec un retour à la ligne
-            TxtLogs.ScrollToEnd(); // Fait défiler jusqu'à la fin du TextBox
+            TxtLogs.AppendText(message + Environment.NewLine);
+            TxtLogs.ScrollToEnd();
+        }
+
+        private void ClearGeneratedFilesFolderButton_Click(object sender, RoutedEventArgs e)
+        {
+            GeneratedFilesFolderTextBox.Clear();
+            _generatedFilesFolderPath = string.Empty;
+        }
+
+        private void ClearPartnerEmailFileButton_Click(object sender, RoutedEventArgs e)
+        {
+            PartnerEmailFilePathTextBox.Clear();
+            _partnerEmailFilePath = string.Empty;
+        }
+
+        private void ClearFromDisplayNameButton_Click(object sender, RoutedEventArgs e)
+        {
+            FromDisplayNameTextBox.Clear();
+        }
+
+        private void ClearCcRecipientsButton_Click(object sender, RoutedEventArgs e)
+        {
+            CcRecipientsTextBox.Clear();
+        }
+
+        private void ClearBccRecipientsButton_Click(object sender, RoutedEventArgs e)
+        {
+            BccRecipientsTextBox.Clear();
         }
 
         private void BrowseGeneratedFilesButton_Click(object sender, RoutedEventArgs e)
@@ -178,16 +201,14 @@ namespace ExcelFlow.Views
 
         private async void StartSendingButton_Click(object sender, RoutedEventArgs e)
         {
-            // Cette ligne est bien ici et doit vider le TextBox
-            TxtLogs.Clear(); 
+            TxtLogs.Clear();
             AppendLog("🚀 Début du processus d'envoi d'emails...\n");
 
-            // Réinitialisation des éléments de progression et des visibilités au démarrage
             ProgressBar.Value = 0;
             ProgressTextBlock.Text = "0%";
-            ProgressBar.Visibility = Visibility.Collapsed; // Caché par défaut
-            ProgressTextBlock.Visibility = Visibility.Collapsed; // Caché par défaut
-            ProgressMessageTextBlock.Visibility = Visibility.Collapsed; // Doit rester caché
+            ProgressBar.Visibility = Visibility.Collapsed;
+            ProgressTextBlock.Visibility = Visibility.Collapsed;
+            ProgressMessageTextBlock.Visibility = Visibility.Collapsed;
 
             if (string.IsNullOrWhiteSpace(_generatedFilesFolderPath) || string.IsNullOrWhiteSpace(_partnerEmailFilePath))
             {
@@ -199,7 +220,7 @@ namespace ExcelFlow.Views
             List<string> ccRecipients = CcRecipientsTextBox.Text.Split(new[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToList();
             List<string> bccRecipients = BccRecipientsTextBox.Text.Split(new[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToList();
 
-            SetUiEnabledState(false); // Désactiver l'interface pendant l'envoi
+            SetUiEnabledState(false);
 
             var request = new EmailSendRequest
             {
@@ -214,7 +235,7 @@ namespace ExcelFlow.Views
 
             try
             {
-                var resultMessage = await _emailSendingService.StartEmailSendingAsync(request, _cts.Token);
+                var resultMessage = await _sendEmailService.StartEmailSendingAsync(request, _cts.Token);
                 AppendLog(resultMessage);
 
                 if (resultMessage.StartsWith("❌"))
@@ -242,11 +263,10 @@ namespace ExcelFlow.Views
             }
             finally
             {
-                SetUiEnabledState(true); // Réactiver l'interface
-                // Cacher les éléments de progression à la fin, s'ils étaient visibles
+                SetUiEnabledState(true);
                 ProgressBar.Visibility = Visibility.Collapsed;
                 ProgressTextBlock.Visibility = Visibility.Collapsed;
-                ProgressMessageTextBlock.Visibility = Visibility.Collapsed; 
+                ProgressMessageTextBlock.Visibility = Visibility.Collapsed;
                 _cts?.Dispose();
                 _cts = null;
                 AppendLog("Processus d'envoi d'emails terminé ou annulé.");
@@ -267,10 +287,19 @@ namespace ExcelFlow.Views
             StartSendingButton.IsEnabled = enabled;
             BrowseGeneratedFilesButton.IsEnabled = enabled;
             BrowsePartnerEmailFileButton.IsEnabled = enabled;
+
+            ClearGeneratedFilesFolderButton.IsEnabled = enabled;
+            ClearPartnerEmailFileButton.IsEnabled = enabled;
+            ClearFromDisplayNameButton.IsEnabled = enabled;
+            ClearCcRecipientsButton.IsEnabled = enabled;
+            ClearBccRecipientsButton.IsEnabled = enabled;
+
+            GeneratedFilesFolderTextBox.IsEnabled = enabled;
+            PartnerEmailFilePathTextBox.IsEnabled = enabled;
             FromDisplayNameTextBox.IsEnabled = enabled;
             CcRecipientsTextBox.IsEnabled = enabled;
             BccRecipientsTextBox.IsEnabled = enabled;
-            CancelSendingButton.IsEnabled = !enabled; // Le bouton annuler est activé quand les autres sont désactivés
+            CancelSendingButton.IsEnabled = !enabled;
         }
     }
 }

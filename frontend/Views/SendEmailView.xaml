@@ -4,8 +4,41 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:ExcelFlow.Views"
+             xmlns:utilities="clr-namespace:ExcelFlow.Utilities"
              mc:Ignorable="d"
              d:DesignHeight="550" d:DesignWidth="680">
+
+    <UserControl.Resources>
+        <utilities:StringIsNullOrEmptyConverter x:Key="StringIsNullOrEmptyConverter" />
+
+        <Style x:Key="ClearButtonStyle" TargetType="Button">
+            <Setter Property="Width" Value="20"/>
+            <Setter Property="Height" Value="20"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="5 0 0 0"/> <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="Gray"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Foreground" Value="Red"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </UserControl.Resources>
+
     <Grid Margin="10">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -34,13 +67,38 @@
                                Background="White"
                                DockPanel.Dock="Top"
                                Margin="0 0 0 5"/>
-                    <StackPanel Orientation="Horizontal">
-                        <TextBox x:Name="GeneratedFilesFolderTextBox" Width="450"/>
-                        <Button x:Name="BrowseGeneratedFilesButton"             Content="Sélectionner"
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/> <ColumnDefinition Width="Auto"/> <ColumnDefinition Width="Auto"/> </Grid.ColumnDefinitions>
+
+                        <TextBox x:Name="GeneratedFilesFolderTextBox"
+                                 Grid.Column="0"
+                                 HorizontalAlignment="Stretch"
+                                 Padding="5"/>
+
+                        <Button x:Name="ClearGeneratedFilesFolderButton"
+                                Grid.Column="1"
+                                Content="✖"
+                                ToolTip="Effacer le chemin du dossier"
+                                Click="ClearGeneratedFilesFolderButton_Click">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource ClearButtonStyle}">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Text, ElementName=GeneratedFilesFolderTextBox, Converter={StaticResource StringIsNullOrEmptyConverter}}" Value="False">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                        <Button x:Name="BrowseGeneratedFilesButton"
+                                Grid.Column="2"
+                                Content="Sélectionner"
                                 Width="100"
                                 Margin="10 0 0 0"
                                 Click="BrowseGeneratedFilesButton_Click"/>
-                    </StackPanel>
+                    </Grid>
                 </DockPanel>
             </Border>
 
@@ -55,13 +113,41 @@
                                Background="White"
                                DockPanel.Dock="Top"
                                Margin="0 0 0 5"/>
-                    <StackPanel Orientation="Horizontal">
-                        <TextBox x:Name="PartnerEmailFilePathTextBox" Width="450"/>
-                        <Button x:Name="BrowsePartnerEmailFileButton"             Content="Sélectionner"
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBox x:Name="PartnerEmailFilePathTextBox"
+                                 Grid.Column="0"
+                                 HorizontalAlignment="Stretch"
+                                 Padding="5"/>
+
+                        <Button x:Name="ClearPartnerEmailFileButton"
+                                Grid.Column="1"
+                                Content="✖"
+                                ToolTip="Effacer le chemin du fichier"
+                                Click="ClearPartnerEmailFileButton_Click">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource ClearButtonStyle}">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Text, ElementName=PartnerEmailFilePathTextBox, Converter={StaticResource StringIsNullOrEmptyConverter}}" Value="False">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                        <Button x:Name="BrowsePartnerEmailFileButton"
+                                Grid.Column="2"
+                                Content="Sélectionner"
                                 Width="100"
                                 Margin="10 0 0 0"
                                 Click="BrowsePartnerEmailFileButton_Click"/>
-                    </StackPanel>
+                    </Grid>
                 </DockPanel>
             </Border>
 
@@ -76,7 +162,32 @@
                                Background="White"
                                DockPanel.Dock="Top"
                                Margin="0 0 0 5"/>
-                    <TextBox x:Name="FromDisplayNameTextBox" Width="450"/>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="FromDisplayNameTextBox"
+                                 Grid.Column="0"
+                                 HorizontalAlignment="Stretch"
+                                 Padding="5"/>
+                        <Button x:Name="ClearFromDisplayNameButton"
+                                Grid.Column="1"
+                                Content="✖"
+                                ToolTip="Effacer le nom d'affichage"
+                                Click="ClearFromDisplayNameButton_Click">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource ClearButtonStyle}">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Text, ElementName=FromDisplayNameTextBox, Converter={StaticResource StringIsNullOrEmptyConverter}}" Value="False">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                    </Grid>
                 </DockPanel>
             </Border>
 
@@ -91,7 +202,32 @@
                                Background="White"
                                DockPanel.Dock="Top"
                                Margin="0 0 0 5"/>
-                    <TextBox x:Name="CcRecipientsTextBox" Width="450"/>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="CcRecipientsTextBox"
+                                 Grid.Column="0"
+                                 HorizontalAlignment="Stretch"
+                                 Padding="5"/>
+                        <Button x:Name="ClearCcRecipientsButton"
+                                Grid.Column="1"
+                                Content="✖"
+                                ToolTip="Effacer les destinataires CC"
+                                Click="ClearCcRecipientsButton_Click">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource ClearButtonStyle}">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Text, ElementName=CcRecipientsTextBox, Converter={StaticResource StringIsNullOrEmptyConverter}}" Value="False">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                    </Grid>
                 </DockPanel>
             </Border>
 
@@ -105,7 +241,32 @@
                                Background="White"
                                DockPanel.Dock="Top"
                                Margin="0 0 0 5"/>
-                    <TextBox x:Name="BccRecipientsTextBox" Width="450"/>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="BccRecipientsTextBox"
+                                 Grid.Column="0"
+                                 HorizontalAlignment="Stretch"
+                                 Padding="5"/>
+                        <Button x:Name="ClearBccRecipientsButton"
+                                Grid.Column="1"
+                                Content="✖"
+                                ToolTip="Effacer les destinataires BCC"
+                                Click="ClearBccRecipientsButton_Click">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource ClearButtonStyle}">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Text, ElementName=BccRecipientsTextBox, Converter={StaticResource StringIsNullOrEmptyConverter}}" Value="False">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                    </Grid>
                 </DockPanel>
             </Border>
         </StackPanel>

@@ -14,7 +14,7 @@ public class PartnerEmailSenderRequest
 
     // Les propriétés SubjectTemplate et BodyTemplate sont supprimées car elles ne sont plus fournies par le client.
 
-    public string? FromDisplayName { get; set; }
+    public string? FromDisplayName { get; set; } 
 
     public List<string>? CcRecipients { get; set; } // Liste d'adresses email pour la copie carbone (Cc)
 
