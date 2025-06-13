@@ -11,11 +11,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="MahApps.Metro" Version="2.4.10" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="7.0.5" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
  
   </ItemGroup>
 
+<ItemGroup>
+    <Folder Include="Assets\" />
+    <Resource Include="Assets/Icons/wafacash.ico" />
+</ItemGroup>
 <ItemGroup>
   <None Update="backend\**\*">
     <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

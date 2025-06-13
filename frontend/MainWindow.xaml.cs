@@ -1,42 +1,55 @@
 ﻿using System.Windows;
 using WpfControls = System.Windows.Controls;
 using WpfMsgBox = System.Windows.MessageBox;
+using WpsMsgBoxButton = System.Windows.MessageBoxButton;
+using WpsMsgBoxImage = System.Windows.MessageBoxImage;
 using ExcelFlow.Views;
 using System.Linq;
+using ExcelFlow.Utilities; // Pour IClosableView
 
-using ExcelFlow.Helpers; // <--- This line is correct
-
-/// <summary>
-/// Represents the main window of the ExcelFlow application, providing navigation between different views.
-/// </summary>
 namespace ExcelFlow
 {
     public partial class MainWindow : Window
     {
         private WpfControls.Button? _currentActiveButton;
-
-        // 1. Declare instances of your views
         private GenerationView? _generationView;
         private SendEmailView? _sendEmailView;
 
-        // Constructor for MainWindow
         public MainWindow()
         {
             InitializeComponent();
 
-            // 2. Initialize views once when the MainWindow is created
             _generationView = new GenerationView();
             _sendEmailView = new SendEmailView();
 
-            // Now 'this.FindVisualChildren' should be correctly recognized as an extension method.
-            var initialButton = this.FindVisualChildren<WpfControls.Button>()
-                                    .FirstOrDefault(b => b.Tag?.ToString() == "GenerationView");
+            // Alternative à FindVisualChildren : utiliser FindName ou chercher dans le XAML
+            var initialButton = this.FindName("GenerationViewButton") as WpfControls.Button;
+            if (initialButton == null)
+            {
+                // Si FindVisualChildren est défini dans ExcelFlow.Helpers
+                initialButton = this.FindVisualChildren<WpfControls.Button>()
+                                   .FirstOrDefault(b => b.Tag?.ToString() == "GenerationView");
+            }
 
-            // Navigate to the initial view (GenerationView)
             NavigateToView("GenerationView", initialButton);
         }
 
-        // Event handler for navigation buttons
+        protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
+        {
+            var currentView = MainContentControl.Content as IClosableView;
+            if (currentView?.IsOperationInProgress == true)
+            {
+                (string message, string title, WpsMsgBoxImage icon) = currentView.GetClosingConfirmation();
+                var result = WpfMsgBox.Show(message, title, WpsMsgBoxButton.YesNo, icon);
+                if (result == MessageBoxResult.No)
+                {
+                    e.Cancel = true;
+                }
+            }
+
+            base.OnClosing(e);
+        }
+
         private void NavigationButton_Click(object sender, RoutedEventArgs e)
         {
             if (sender is WpfControls.Button clickedButton)
@@ -49,7 +62,6 @@ namespace ExcelFlow
             }
         }
 
-        /// Method to navigate to the specified view and update the active button style
         private void NavigateToView(string viewName, WpfControls.Button? clickedButton)
         {
             if (_currentActiveButton != null && _currentActiveButton != clickedButton)
@@ -60,15 +72,13 @@ namespace ExcelFlow
             switch (viewName)
             {
                 case "GenerationView":
-                    // 3. Reuse the existing instance
                     MainContentControl.Content = _generationView;
                     break;
                 case "SendEmailView":
-                    // 3. Reuse the existing instance
                     MainContentControl.Content = _sendEmailView;
                     break;
                 default:
-                    WpfMsgBox.Show($"La vue '{viewName}' n'est pas reconnue.", "Erreur de Navigation", MessageBoxButton.OK, MessageBoxImage.Error);
+                    WpfMsgBox.Show($"La vue '{viewName}' n'est pas reconnue.", "Erreur de Navigation", WpsMsgBoxButton.OK, WpsMsgBoxImage.Error);
                     return;
             }
 

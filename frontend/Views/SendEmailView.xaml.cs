@@ -10,43 +10,53 @@ using WinForms = System.Windows.Forms;
 using WpfOpenFileDialog = Microsoft.Win32.OpenFileDialog;
 using System.Collections.Generic;
 using System.Linq;
-
-// Références vers vos projets de modèles et de services
 using ExcelFlow.Models;
 using ExcelFlow.Services;
-using WpfMsgBox = System.Windows.MessageBox; // Alias for System.Windows.MessageBox
-using ExcelFlow.Utilities; // IMPORTANT : Ajoutez cette ligne pour accéder à AppConstants
+using WpfMsgBox = System.Windows.MessageBox;
+using ExcelFlow.Utilities; // Pour IClosableView et AppConstants
 
 namespace ExcelFlow.Views
 {
-    public partial class SendEmailView : WpfControls.UserControl
+    public partial class SendEmailView : WpfControls.UserControl, IClosableView
     {
         private readonly HubConnection _hubConnection;
         private readonly SendEmailService _sendEmailService;
         private CancellationTokenSource? _cts;
-
         private string _generatedFilesFolderPath = "";
         private string _partnerEmailFilePath = "";
+
+        // Implémentation de l'interface IClosableView
+        public bool IsOperationInProgress => _cts != null && !_cts.IsCancellationRequested;
+
+        public (string Message, string Title, MessageBoxImage Icon) GetClosingConfirmation()
+        {
+            return (
+                "An email sending process is currently running. Closing the application may interrupt the operation. Are you sure you want to exit?",
+                "Confirm Exit - Email Sending",
+                MessageBoxImage.Warning
+            );
+        }
 
         public SendEmailView()
         {
             InitializeComponent();
 
-            _sendEmailService = new SendEmailService("https://localhost:7274"); // Vérifiez l'URL
+            _sendEmailService = new SendEmailService("https://localhost:7274");
             _hubConnection = new HubConnectionBuilder()
-                .WithUrl("https://localhost:7274/partnerFileHub") // Vérifiez l'URL du hub
+                .WithUrl("https://localhost:7274/partnerFileHub")
                 .WithAutomaticReconnect()
                 .Build();
 
-            // >>> MODIFICATION ICI : Pré-remplir le TextBox avec la constante
+            // Pré-remplir le TextBox avec la constante
             FromDisplayNameTextBox.Text = AppConstants.DefaultFromDisplayName;
 
             // Initialisation des visibilités des éléments de progression
             ProgressBar.Visibility = Visibility.Collapsed;
             ProgressTextBlock.Visibility = Visibility.Collapsed;
             ProgressMessageTextBlock.Visibility = Visibility.Collapsed;
-            TxtLogs.Text = string.Empty; // S'assurer que les logs sont vides au démarrage de la vue
+            TxtLogs.Text = string.Empty;
 
+            // Configuration des gestionnaires SignalR
             _hubConnection.On<string>("ReceiveMessage", message =>
             {
                 Dispatcher.Invoke(() => AppendLog(message));
@@ -172,21 +182,22 @@ namespace ExcelFlow.Views
 
         private void BrowseGeneratedFilesButton_Click(object sender, RoutedEventArgs e)
         {
-            using (var dialog = new WinForms.FolderBrowserDialog())
+            using var dialog = new WinForms.FolderBrowserDialog
             {
-                dialog.Description = "Sélectionnez le dossier des fichiers partenaires générés";
-                dialog.ShowNewFolderButton = true;
-                if (dialog.ShowDialog() == WinForms.DialogResult.OK)
-                {
-                    _generatedFilesFolderPath = dialog.SelectedPath;
-                    GeneratedFilesFolderTextBox.Text = _generatedFilesFolderPath;
-                }
+                Description = "Sélectionnez le dossier des fichiers partenaires générés",
+                ShowNewFolderButton = true
+            };
+
+            if (dialog.ShowDialog() == WinForms.DialogResult.OK)
+            {
+                _generatedFilesFolderPath = dialog.SelectedPath;
+                GeneratedFilesFolderTextBox.Text = _generatedFilesFolderPath;
             }
         }
 
         private void BrowsePartnerEmailFileButton_Click(object sender, RoutedEventArgs e)
         {
-            WpfOpenFileDialog openFileDialog = new WpfOpenFileDialog
+            var openFileDialog = new WpfOpenFileDialog
             {
                 Filter = "Fichiers Excel (*.xlsx;*.xls)|*.xlsx;*.xls|Tous les fichiers (*.*)|*.*",
                 Title = "Sélectionnez le fichier des mails des partenaires"

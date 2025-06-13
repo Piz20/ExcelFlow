@@ -6,7 +6,8 @@
         mc:Ignorable="d"
         Title="ExcelFlow - © 2025 WAFACASH ALL RIGHTS RESERVED"
         Height="700" Width="1000" MinHeight="600" MinWidth="800"
-        WindowStartupLocation="CenterScreen">
+        WindowStartupLocation="CenterScreen"
+        Icon="/Assets/Icons/wafacash.ico">
 
     <Window.Resources>
         <Style TargetType="Button" x:Key="NavigationButtonStyle">
@@ -75,7 +76,7 @@
                         Style="{StaticResource NavigationButtonStyle}"
                         Tag="GenerationView"  Click="NavigationButton_Click"/>
 
-                <Button Content="Envoi des Emails"
+                <Button Content="Envoi des emails"
                         Style="{StaticResource NavigationButtonStyle}"
                         Tag="SendEmailView"  Click="NavigationButton_Click"/>
 

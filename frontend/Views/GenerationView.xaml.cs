@@ -4,26 +4,24 @@ using System;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows; // This namespace contains MessageBox, MessageBoxButton, MessageBoxImage
-using WpfControls = System.Windows.Controls; // This alias is for UserControl and other Controls
+using System.Windows;
+using WpfControls = System.Windows.Controls;
 using ExcelFlow.Models;
 using WinForms = System.Windows.Forms;
-using WpfMsgBox = System.Windows.MessageBox; // Alias for System.Windows.MessageBox
+using WpfMsgBox = System.Windows.MessageBox;
 using WpfOpenFileDialog = Microsoft.Win32.OpenFileDialog;
 using System.IO;
-using ExcelFlow.Services; // Assurez-vous que ce using est présent si GenerationService est dans ce namespace.
+using ExcelFlow.Services;
+using ExcelFlow.Utilities; // Contient IClosableView
 
 namespace ExcelFlow.Views
 {
-    public partial class GenerationView : WpfControls.UserControl
+    public partial class GenerationView : WpfControls.UserControl, IClosableView
     {
         private readonly HubConnection _hubConnection;
         private readonly GenerationService _generationService;
         private CancellationTokenSource? _cts;
 
-        /// <summary>
-        /// Constructeur de la vue de génération.
-        /// </summary>
         public GenerationView()
         {
             InitializeComponent();
@@ -38,10 +36,10 @@ namespace ExcelFlow.Views
             // Initialisation de la visibilité des éléments de progression
             ProgressGeneration.Visibility = Visibility.Collapsed;
             ProgressPercentageText.Visibility = Visibility.Collapsed;
-            TxtLogs.Text = string.Empty; // S'assurer que les logs sont vides au démarrage
+            TxtLogs.Text = string.Empty;
 
             // Initialisation de l'état de l'UI
-            SetUiEnabledState(true); // Tous les contrôles sont activés au démarrage
+            SetUiEnabledState(true);
 
             _hubConnection.On<string>("ReceiveMessage", message =>
             {
@@ -73,14 +71,23 @@ namespace ExcelFlow.Views
             StartSignalRConnection();
         }
 
-        /// <summary>
-        /// Démarre la connexion SignalR au service de génération.
-        /// </summary>
+        // Implémentation de l'interface IClosableView
+        public bool IsOperationInProgress => _cts != null && !_cts.IsCancellationRequested;
+
+        public (string Message, string Title, MessageBoxImage Icon) GetClosingConfirmation()
+        {
+            return (
+                "A file generation process is currently running. Closing the application may result in incomplete files. Are you sure you want to exit?",
+                "Confirm Exit - File Generation",
+                MessageBoxImage.Warning
+            );
+        }
+
         private async void StartSignalRConnection()
         {
             try
             {
-                if (_hubConnection.State == HubConnectionState.Disconnected) // Vérifier si la connexion n'est pas déjà établie
+                if (_hubConnection.State == HubConnectionState.Disconnected)
                 {
                     await _hubConnection.StartAsync();
                     AppendLog("🔌 Connecté au service de génération");
@@ -93,19 +100,12 @@ namespace ExcelFlow.Views
             }
         }
 
-        /// <summary>
-        /// Ajoute un message au journal de logs.
-        /// </summary>
         private void AppendLog(string message)
         {
             TxtLogs.AppendText(message + Environment.NewLine);
             TxtLogs.ScrollToEnd();
         }
 
-
-        /// <summary>
-        /// Sélectionne le fichier source.
-        /// </summary>
         private void BtnSelectSourceFile_Click(object sender, RoutedEventArgs e)
         {
             var openFileDialog = new WpfOpenFileDialog { Filter = "Fichiers Excel (*.xlsx;*.xls)|*.xlsx;*.xls" };
@@ -115,9 +115,6 @@ namespace ExcelFlow.Views
             }
         }
 
-        /// <summary>
-        /// Sélectionne le fichier modèle pour la génération.
-        /// </summary>
         private void BtnSelectTemplateFile_Click(object sender, RoutedEventArgs e)
         {
             var openFileDialog = new WpfOpenFileDialog { Filter = "Fichiers Excel (*.xlsx;*.xls)|*.xlsx;*.xls" };
@@ -127,9 +124,6 @@ namespace ExcelFlow.Views
             }
         }
 
-        /// <summary>
-        /// Sélectionne le dossier de sortie pour les fichiers générés.
-        /// </summary>
         private void BtnSelectOutputDir_Click(object sender, RoutedEventArgs e)
         {
             using var dialog = new WinForms.FolderBrowserDialog
@@ -146,15 +140,11 @@ namespace ExcelFlow.Views
             }
         }
 
-        /// <summary>
-        /// Gère le clic sur le bouton de génération.
-        /// </summary>
         private async void BtnGenerate_Click(object sender, RoutedEventArgs e)
         {
             TxtLogs.Clear();
             AppendLog("🚀 Début de la génération veuillez patienter...\n");
 
-            // Utilisez directement les TextBoxes pour la validation
             if (string.IsNullOrEmpty(TxtSourceFilePath.Text) ||
                 string.IsNullOrEmpty(TxtTemplateFilePath.Text) ||
                 string.IsNullOrEmpty(TxtOutputDir.Text))
@@ -163,7 +153,6 @@ namespace ExcelFlow.Views
                 return;
             }
 
-            // Désactive l'UI au début de l'opération
             SetUiEnabledState(false);
 
             var request = new GenerationRequest
@@ -171,7 +160,7 @@ namespace ExcelFlow.Views
                 filePath = TxtSourceFilePath.Text,
                 templatePath = TxtTemplateFilePath.Text,
                 outputDir = TxtOutputDir.Text,
-                sheetName = "Analyse", // Considérez si cela devrait être configurable
+                sheetName = "Analyse",
                 startIndex = int.TryParse(TxtStartIndex.Text, out int si) ? si : 0,
                 count = int.TryParse(TxtCount.Text, out int c) ? c : 200
             };
@@ -211,7 +200,6 @@ namespace ExcelFlow.Views
             }
             finally
             {
-                // Réactive l'UI à la fin de l'opération (succès, échec ou annulation)
                 SetUiEnabledState(true);
                 ProgressGeneration.Visibility = Visibility.Collapsed;
                 ProgressPercentageText.Visibility = Visibility.Collapsed;
@@ -221,9 +209,6 @@ namespace ExcelFlow.Views
             }
         }
 
-        /// <summary>
-        /// Gère le clic sur le bouton d'arrêt de la génération.
-        /// </summary>
         private void BtnStop_Click(object sender, RoutedEventArgs e)
         {
             if (_cts != null && !_cts.IsCancellationRequested)
@@ -233,56 +218,39 @@ namespace ExcelFlow.Views
             }
         }
 
-        /// <summary>
-        /// Efface le contenu de la TextBox du chemin du fichier source.
-        /// </summary>
         private void ClearSourceFileButton_Click(object sender, RoutedEventArgs e)
         {
             TxtSourceFilePath.Text = string.Empty;
         }
 
-        /// <summary>
-        /// Efface le contenu de la TextBox du chemin du fichier modèle.
-        /// </summary>
         private void ClearTemplateFileButton_Click(object sender, RoutedEventArgs e)
         {
             TxtTemplateFilePath.Text = string.Empty;
         }
 
-        /// <summary>
-        /// Efface le contenu de la TextBox du chemin du dossier de sortie.
-        /// </summary>
         private void ClearOutputDirButton_Click(object sender, RoutedEventArgs e)
         {
             TxtOutputDir.Text = string.Empty;
         }
 
-        /// <summary>
-        /// Active ou désactive les éléments de l'UI en fonction de l'état d'une opération.
-        /// </summary>
-        /// <param name="enabled">True pour activer les contrôles, False pour les désactiver.</param>
         private void SetUiEnabledState(bool enabled)
         {
-            // Champs de saisie
             TxtSourceFilePath.IsEnabled = enabled;
             TxtTemplateFilePath.IsEnabled = enabled;
             TxtOutputDir.IsEnabled = enabled;
             TxtStartIndex.IsEnabled = enabled;
             TxtCount.IsEnabled = enabled;
 
-            // Boutons de sélection de fichiers/dossiers
             BtnSelectSourceFile.IsEnabled = enabled;
             BtnSelectTemplateFile.IsEnabled = enabled;
             BtnSelectOutputDir.IsEnabled = enabled;
 
-            // Boutons de suppression (croix)
             ClearSourceFileButton.IsEnabled = enabled;
             ClearTemplateFileButton.IsEnabled = enabled;
             ClearOutputDirButton.IsEnabled = enabled;
 
-            // Boutons d'action principaux
-            BtnGenerate.IsEnabled = enabled; // Le bouton Générer est activé si enabled est vrai
-            BtnStop.IsEnabled = !enabled;    // Le bouton Stop est activé si enabled est faux (quand la génération est en cours)
+            BtnGenerate.IsEnabled = enabled;
+            BtnStop.IsEnabled = !enabled;
         }
     }
 }

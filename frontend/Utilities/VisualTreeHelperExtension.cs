@@ -5,7 +5,7 @@ using System.Collections.Generic; // For IEnumerable
 using System.Windows;             // For DependencyObject
 using System.Windows.Media;       // For VisualTreeHelper
 
-namespace ExcelFlow.Helpers
+namespace ExcelFlow.Utilities
 {
 
 
