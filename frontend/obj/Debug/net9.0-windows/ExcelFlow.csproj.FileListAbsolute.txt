@@ -206,3 +206,4 @@ C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\frontend\bin\Debug\net9.0-windows\
 C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\frontend\bin\Debug\net9.0-windows\MahApps.Metro.dll
 C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\frontend\bin\Debug\net9.0-windows\Microsoft.Xaml.Behaviors.dll
 C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\frontend\bin\Debug\net9.0-windows\de\MahApps.Metro.resources.dll
+C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\frontend\obj\Debug\net9.0-windows\App.baml

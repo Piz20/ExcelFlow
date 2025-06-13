@@ -242,6 +242,11 @@ namespace ExcelFlow.Services
                     LogOnly($"  - {blockEndRow - blockStartRow + 1} lignes copiées dans le template."); // Changement ici
 
 
+                    // Ajuster automatiquement la largeur des colonnes de la feuille principale
+                    templateWs.Columns().AdjustToContents();
+                    LogOnly("  - Colonnes ajustées automatiquement aux contenus.");
+
+
                     int templateLastRow = templateWs.LastRowUsed()?.RowNumber() ?? 0;
                     if (templateLastRow >= currentTargetRow)
                     {
@@ -259,13 +264,13 @@ namespace ExcelFlow.Services
                     }
 
 
-                        //AJOUT DES FEUILLES SUPPLÉMENTAIRES ICI
+                    //AJOUT DES FEUILLES SUPPLÉMENTAIRES ICI
                     LogOnly($"  - Ajout des feuilles supplémentaires pour '{partnerName}'..."); // Changement ici
                     var feuillesAScanner = new List<string> { "Activité nette à J", "J+1", "Regul" };
                     await AddSupplementarySheetsAsync(worksheet.Workbook, templateWb, partnerName, feuillesAScanner, cancellationToken);
                     LogOnly($"  - Traitement des feuilles supplémentaires terminé pour '{partnerName}'."); // Changement ici
 
-                     // Création du nom de fichier de sortie
+                    // Création du nom de fichier de sortie
                     string safePartnerName = string.Concat(partnerName.Split(Path.GetInvalidFileNameChars()));
                     string dateRange = (dateStrmin == dateStrmax) ? dateStrmin : $"{dateStrmin} au {dateStrmax}";
                     string outputFileName = $"COMPTE SUPPORT {safePartnerName} du {dateRange}.xlsx";
@@ -313,6 +318,7 @@ namespace ExcelFlow.Services
                 Message = "Génération terminée." // Message final pour l'utilisateur
             }, cancellationToken);
             await LogAndSend("--- Processus de génération des fichiers partenaires terminé ---", cancellationToken); // Final summary
+
         }
 
         public Task AddSupplementarySheetsAsync(

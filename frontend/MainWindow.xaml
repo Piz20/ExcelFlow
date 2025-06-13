@@ -76,7 +76,7 @@
                         Style="{StaticResource NavigationButtonStyle}"
                         Tag="GenerationView"  Click="NavigationButton_Click"/>
 
-                <Button Content="Envoi des emails"
+                <Button Content="Envoi des Emails"
                         Style="{StaticResource NavigationButtonStyle}"
                         Tag="SendEmailView"  Click="NavigationButton_Click"/>
 
