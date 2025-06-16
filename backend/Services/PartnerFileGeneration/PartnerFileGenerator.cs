@@ -244,7 +244,18 @@ namespace ExcelFlow.Services
 
                     // Ajuster automatiquement la largeur des colonnes de la feuille principale
                     templateWs.Columns().AdjustToContents();
+
+                    // Ajouter +5 à chaque colonne après l'ajustement automatique
+                    foreach (var column in templateWs.ColumnsUsed())
+                    {
+                        column.Width += 8;
+                    }
                     LogOnly("  - Colonnes ajustées automatiquement aux contenus.");
+
+                    // Appliquer la police "Calibri", taille 10 à toute la feuille
+                    templateWs.Style.Font.FontName = "Calibri";
+                    templateWs.Style.Font.FontSize = 10;
+
 
 
                     int templateLastRow = templateWs.LastRowUsed()?.RowNumber() ?? 0;
@@ -449,6 +460,12 @@ namespace ExcelFlow.Services
                 LogOnly("      Lignes de données copiées."); // Changement ici
 
                 newSheet.Columns().AdjustToContents();
+                LogOnly("  - Toutes les colonnes ont été définies à une largeur de 20.");
+
+                // Appliquer la police "Calibri", taille 10 à toute la feuille
+                newSheet.Style.Font.FontName = "Calibri";
+                newSheet.Style.Font.FontSize = 10;
+
                 LogOnly($"      ✅ Feuille '{feuilleName}' ajoutée et ajustée pour le partenaire '{partnerName}' avec {matchedRows.Count} lignes de données."); // Changement ici
             }
             LogOnly("    Fin de l'ajout des feuilles supplémentaires."); // Changement ici
