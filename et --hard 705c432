@@ -1,0 +1,15 @@
+[33mc577309[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32msecondaire[m[33m)[m Add generated NuGet files for ExcelFlow project
+[33m705c432[m feat: Enhance Excel file generation with improved formatting
+[33m418513c[m Add generated NuGet files for ExcelFlow project
+[33m34ce700[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m)[m Add generated NuGet files for ExcelFlow project
+[33m986bccf[m Add generated files and project configuration for ExcelFlow
+[33mf837c31[m feat: Enhance PartnerExcelReader and EmailDataExtractor functionality
+[33m67fdaa0[m Add generated NuGet props and targets files for ExcelFlow project
+[33mb86c918[m feat: Implement email sending functionality with dynamic content generation
+[33m147c5e9[m Refactor PartnerEmailSenderController and related classes for improved email handling
+[33m6bdfe1c[m Update assembly information and related files for backend project in Debug configuration
+[33m16a2b86[m Enhance PartnerEmailSender functionality by adding support for Cc and Bcc recipients, improving error handling, and refining model validation messages.
+[33me43f873[m Generate assembly info and related files for ExcelFlow project in Debug configuration
+[33m87f1982[m Add generated files for ExcelFlow project in Debug configuration
+[33mc53b7c8[m Add generated NuGet files for ExcelFlow project
+[33ma1305ec[m Add project.nuget.cache file for package management

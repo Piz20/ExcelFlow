@@ -194,9 +194,7 @@ public class PartnerExcelReader
                 {
                     PartnerName = partnerName,
                     Emails = extractedEmails.Distinct(StringComparer.OrdinalIgnoreCase).ToList(),
-                    SearchableNameFull = searchableNameFull,
-                    SearchableNameSigle = searchableNameSigle,
-                    SearchableKeywords = searchableKeywords
+                 
                 });
             }
         }
