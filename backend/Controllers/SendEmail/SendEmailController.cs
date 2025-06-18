@@ -1,4 +1,3 @@
-// In your EmailController.cs
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System.Threading.Tasks;
@@ -6,8 +5,8 @@ using System.Collections.Generic;
 using System.IO;
 using Microsoft.AspNetCore.Hosting;
 using ExcelFlow.Services;
-using ExcelFlow.Models; // Ensure SendEmailRequest is here
-using System.Linq; // For .Any() and .Union()
+using ExcelFlow.Models; // Assure-toi que SendEmailRequest est là
+using System.Linq;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -39,11 +38,7 @@ public class EmailController : ControllerBase
             attachmentPaths = new List<string>();
             foreach (var fileName in request.AttachmentFileNames)
             {
-                // Assuming fileName already contains the full path from the request.
-                // If you intend for "Uploads" to be a subfolder of your application's content root,
-                // and fileName is just the file name (e.g., "my_document.pdf"), then
-                // string filePath = Path.Combine(_webHostEnvironment.ContentRootPath, "Uploads", fileName);
-                string filePath = fileName;
+                string filePath = fileName; // adapte si besoin (Uploads, etc.)
 
                 if (System.IO.File.Exists(filePath))
                 {
@@ -52,13 +47,10 @@ public class EmailController : ControllerBase
                 else
                 {
                     _logger.LogWarning("Attachment file not found: {FileName} at path {FilePath}. Proceeding without this attachment.", fileName, filePath);
-                    // You could also return BadRequest here if a missing attachment should fail the request.
-                    // return BadRequest($"Attachment file not found: {fileName}");
                 }
             }
         }
 
-        // Combine all recipients for logging
         var allRecipientsForLogging = (request.ToRecipients ?? Enumerable.Empty<string>())
                                         .Union(request.CcRecipients ?? Enumerable.Empty<string>())
                                         .Union(request.BccRecipients ?? Enumerable.Empty<string>())
@@ -67,21 +59,22 @@ public class EmailController : ControllerBase
         _logger.LogInformation("Attempting to send email to {Recipients} with subject '{Subject}' from '{FromDisplayName}' with {AttachmentCount} attachments.",
             string.Join(", ", allRecipientsForLogging),
             request.Subject,
-            request.FromDisplayName ?? _sendEmail.FromEmail, // Use the FromEmail from the service if FromDisplayName is null
+            request.FromDisplayName ?? _sendEmail.FromEmail,
             attachmentPaths?.Count ?? 0);
 
-        // --- CORRECTION START HERE ---
-        // Ensure parameters match the SendEmailAsync signature in SendEmail.cs
+        // Envoi avec uniquement smtpHost, smtpPort et fromEmail
         bool sent = await _sendEmail.SendEmailAsync(
-            toRecipients: request.ToRecipients,   // Pass the List<string> directly
-            ccRecipients: request.CcRecipients,   // Pass the List<string> directly
-            bccRecipients: request.BccRecipients, // Pass the List<string> directly
-            subject: request.Subject,             // Pass the string directly
-            body: request.Body,                   // Pass the string directly
-            fromDisplayName: request.FromDisplayName, // Pass the string? directly
-            attachmentFilePaths: attachmentPaths  // Pass the List<string>? directly
+            subject: request.Subject,
+            body: request.Body,
+            toRecipients: request.ToRecipients,
+            ccRecipients: request.CcRecipients,
+            bccRecipients: request.BccRecipients,
+            fromDisplayName: request.FromDisplayName,
+            attachmentFilePaths: attachmentPaths,
+            smtpHost: request.SmtpHost,
+            smtpPort: request.SmtpPort,
+            smtpFromEmail: request.SmtpFromEmail // ici au lieu de smtpUser/password
         );
-        // --- CORRECTION END HERE ---
 
         if (sent)
         {

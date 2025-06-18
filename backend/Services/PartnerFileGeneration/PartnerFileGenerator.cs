@@ -144,7 +144,6 @@ namespace ExcelFlow.Services
                 }
 
                 colorInfoCache[row] = colorInfo; // Cache pour réutilisation dans la délimitation des blocs
-                await LogAndSend($"Ligne {row} : Texte='{text}', Couleur de fond={colorInfo}", cancellationToken);
 
                 if (DateTime.TryParse(text, out _))
                 {

@@ -1,10 +1,8 @@
-// Fichier : Models/PartnerEmailSenderRequest.cs
-using System.ComponentModel.DataAnnotations;
 using System.Collections.Generic;
-
+using System.ComponentModel.DataAnnotations;
+using System.Linq;
 namespace ExcelFlow.Models;
-
-public class EmailSendRequest
+public class PartnerEmailSenderRequest
 {
     [Required(ErrorMessage = "Le chemin du fichier Excel des adresses partenaires est requis.")]
     public string PartnerEmailFilePath { get; set; } = string.Empty;
@@ -12,13 +10,17 @@ public class EmailSendRequest
     [Required(ErrorMessage = "Le chemin du dossier des fichiers générés est requis.")]
     public string GeneratedFilesFolderPath { get; set; } = string.Empty;
 
-    // Les propriétés SubjectTemplate et BodyTemplate sont supprimées car elles ne sont plus fournies par le client.
+    public string? FromDisplayName { get; set; }
 
-    public string? FromDisplayName { get; set; } 
+    public List<string>? CcRecipients { get; set; }
 
-    public List<string>? CcRecipients { get; set; } // Liste d'adresses email pour la copie carbone (Cc)
+    public List<string>? BccRecipients { get; set; }
 
-    public List<string>? BccRecipients { get; set; } // Liste d'adresses email pour la copie carbone invisible (Bcc)
+    // SMTP optionnel, donc pas de [Required]
+    public string? SmtpHost { get; set; }
 
-    // Nouvelle propriété : liste des mappings fichiers <-> partenaires
+    [Range(1, 65535, ErrorMessage = "Le port SMTP doit être compris entre 1 et 65535.")]
+    public int? SmtpPort { get; set; }
+
+    public string? SmtpFromEmail { get; set; }
 }

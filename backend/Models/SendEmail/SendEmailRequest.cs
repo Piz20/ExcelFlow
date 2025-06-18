@@ -1,12 +1,12 @@
-// ExcelFlow.Models/SendEmailRequest.cs
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Linq;
 
 namespace ExcelFlow.Models
 {
-    public class SendEmailRequest
+    public class SendEmailRequest : IValidatableObject
     {
-        // Changed from single ToEmail to separate lists for flexibility
+        // Listes de destinataires
         public List<string>? ToRecipients { get; set; }
         public List<string>? CcRecipients { get; set; }
         public List<string>? BccRecipients { get; set; }
@@ -19,9 +19,14 @@ namespace ExcelFlow.Models
 
         public string? FromDisplayName { get; set; }
 
-        public List<string>? AttachmentFileNames { get; set; } // List of full file paths for attachments
+        public List<string>? AttachmentFileNames { get; set; } // Fichiers attachés (chemins complets)
 
-        // Custom validation to ensure at least one recipient is provided in any field
+        // --- Paramètres SMTP optionnels ---
+        public string? SmtpHost { get; set; }
+        public int? SmtpPort { get; set; }
+        public string? SmtpFromEmail { get; set; }
+
+        // Validation pour s'assurer qu'au moins un destinataire est présent
         public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
         {
             if ((ToRecipients == null || !ToRecipients.Any()) &&

@@ -46,14 +46,15 @@ public class PartnerEmailSenderController : ControllerBase
         {
             return BadRequest(new { Message = $"Le dossier des fichiers générés est introuvable : {request.GeneratedFilesFolderPath}" });
         }
-        
+
         try
         {
             await _partnerEmailSender.SendEmailsToPartnersWithAttachments(
                 partnerEmailFilePath: request.PartnerEmailFilePath,
                 generatedFilesFolderPath: request.GeneratedFilesFolderPath,
-                // Le sujet et le corps ne sont plus passés ici, ils sont obtenus via la configuration interne du service.
-                fromDisplayName: request.FromDisplayName,
+                smtpFromEmail: request.SmtpFromEmail,
+                smtpHost: request.SmtpHost,
+                smtpPort: request.SmtpPort,
                 ccRecipients: request.CcRecipients,
                 bccRecipients: request.BccRecipients,
                 cancellationToken: cancellationToken
@@ -78,4 +79,5 @@ public class PartnerEmailSenderController : ControllerBase
             return StatusCode(StatusCodes.Status500InternalServerError, new { Message = $"Une erreur inattendue est survenue : {ex.Message}", Details = ex.ToString() });
         }
     }
+
 }
