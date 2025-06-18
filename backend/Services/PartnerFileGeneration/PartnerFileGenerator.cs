@@ -35,12 +35,12 @@ namespace ExcelFlow.Services
         }
 
         public async Task GeneratePartnerFilesAsync(
-            IXLWorksheet worksheet,
-            string templatePath,
-            string outputDir,
-            int startIndex = 0,
-            int count = 3,
-            CancellationToken cancellationToken = default)
+               IXLWorksheet worksheet,
+               string templatePath,
+               string outputDir,
+               int startIndex = 0,
+               int count = 3,
+               CancellationToken cancellationToken = default)
         {
             await LogAndSend("--- Démarrage du processus de génération des fichiers partenaires ---", cancellationToken);
 
@@ -52,7 +52,7 @@ namespace ExcelFlow.Services
                 throw new InvalidOperationException("La feuille de calcul ne contient aucune ligne utilisée.");
             }
             int lastRow = lastRowUsed.RowNumber();
-            LogOnly($"Dernière ligne utilisée détectée : {lastRow}"); // Changement ici
+            LogOnly($"Dernière ligne utilisée détectée : {lastRow}");
 
             var lastColUsed = worksheet.LastColumnUsed();
             if (lastColUsed == null)
@@ -61,7 +61,7 @@ namespace ExcelFlow.Services
                 throw new InvalidOperationException("La feuille de calcul ne contient aucune colonne utilisée.");
             }
             int lastColumn = lastColUsed.ColumnNumber();
-            LogOnly($"Dernière colonne utilisée détectée : {lastColumn}"); // Changement ici
+            LogOnly($"Dernière colonne utilisée détectée : {lastColumn}");
 
             // Création du dossier de sortie si inexistant
             if (!Directory.Exists(outputDir))
@@ -74,14 +74,78 @@ namespace ExcelFlow.Services
                 await LogAndSend($"Le dossier de sortie existe déjà : {outputDir}", cancellationToken);
             }
 
-            // --- NOUVELLE LOGIQUE DE DÉLIMITATION DES BLOCS BASÉE SUR LE CYCLE DES DATES ---
-            LogOnly("Étape 1: Recherche des lignes contenant des dates..."); // Changement ici
+            // Étape 1: Recherche des lignes contenant des dates
+            LogOnly("Étape 1: Recherche des lignes contenant des dates...");
             List<int> dateLines = new List<int>();
+            Dictionary<int, string> colorInfoCache = new Dictionary<int, string>();
+
+            // Table de correspondance pour les couleurs indexées (palette Excel par défaut)
+            Dictionary<int, string> indexedColorMap = new Dictionary<int, string>
+        {
+            { 64, "#FFFFFF" }, // Index 64 correspond souvent à une couleur blanche ou par défaut
+            // Ajoutez d'autres indices si nécessaire, selon la palette Excel
+        };
+
+            // Table de correspondance approximative pour les couleurs de thème
+            Dictionary<XLThemeColor, string> themeColorMap = new Dictionary<XLThemeColor, string>
+        {
+            { XLThemeColor.Accent4, "#4BACC6" }, // Approximation pour Accent4
+            { XLThemeColor.Background1, "#FFFFFF" }, // Approximation pour Background1
+            // Ajoutez d'autres couleurs de thème si nécessaire
+        };
+
             for (int row = 1; row <= lastRow; row++)
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 var cell = worksheet.Cell(row, 1);
                 string text = cell.GetString();
+
+                // Récupère la couleur de fond
+                var bgColor = cell.Style.Fill.BackgroundColor;
+                string colorInfo;
+
+                if (bgColor.ColorType == XLColorType.Color)
+                {
+                    var color = bgColor.Color; // Couleur RGB directe
+                    colorInfo = $"#{color.R:X2}{color.G:X2}{color.B:X2}"; // Format hexadécimal
+                }
+                else if (bgColor.ColorType == XLColorType.Theme)
+                {
+                    try
+                    {
+                        var themeColor = bgColor.ThemeColor;
+                        var tint = bgColor.ThemeTint;
+                        if (themeColorMap.ContainsKey(themeColor))
+                        {
+                            colorInfo = themeColorMap[themeColor];
+                            if (tint != 0)
+                            {
+                                colorInfo += $", Tint: {tint}";
+                            }
+                        }
+                        else
+                        {
+                            colorInfo = $"Theme: {bgColor.ToString()}"; // Fallback
+                        }
+                    }
+                    catch
+                    {
+                        colorInfo = $"Theme: {bgColor.ToString()}"; // Fallback en cas d'erreur
+                    }
+                }
+                else if (bgColor.ColorType == XLColorType.Indexed)
+                {
+                    int colorIndex = bgColor.Indexed;
+                    colorInfo = indexedColorMap.ContainsKey(colorIndex) ? indexedColorMap[colorIndex] : $"Color Index: {colorIndex}";
+                }
+                else
+                {
+                    colorInfo = bgColor.ToString(); // Couleurs nommées, transparent ou autres
+                }
+
+                colorInfoCache[row] = colorInfo; // Cache pour réutilisation dans la délimitation des blocs
+                await LogAndSend($"Ligne {row} : Texte='{text}', Couleur de fond={colorInfo}", cancellationToken);
+
                 if (DateTime.TryParse(text, out _))
                 {
                     dateLines.Add(row);
@@ -93,11 +157,10 @@ namespace ExcelFlow.Services
                 await LogAndSend("Aucune date trouvée dans la feuille de calcul. Impossible de délimiter les blocs partenaires.", cancellationToken);
                 return;
             }
-            LogOnly($"{dateLines.Count} dates trouvées dans la colonne A."); // Changement ici
+            LogOnly($"{dateLines.Count} dates trouvées dans la colonne A.");
 
-
-            // --- AJOUT : Trouver la date la plus basse et la plus haute du fichier entier ---
-            LogOnly("Étape 2: Détermination de la plage de dates globale du fichier..."); // Changement ici
+            // Étape 2: Détermination de la plage de dates globale du fichier
+            LogOnly("Étape 2: Détermination de la plage de dates globale du fichier...");
             DateTime overallMinDate = DateTime.MaxValue;
             DateTime overallMaxDate = DateTime.MinValue;
 
@@ -119,54 +182,48 @@ namespace ExcelFlow.Services
 
             string dateStrmin = (overallMinDate != DateTime.MaxValue) ? overallMinDate.ToString("dd.MM.yyyy") : "DateMinInconnue";
             string dateStrmax = (overallMaxDate != DateTime.MinValue) ? overallMaxDate.ToString("dd.MM.yyyy") : "DateMaxInconnue";
+            LogOnly($"Plage de dates globale identifiée : du {dateStrmin} au {dateStrmax}");
 
-            LogOnly($"Plage de dates globale identifiée : du {dateStrmin} au {dateStrmax}"); // Changement ici
-
-
-            LogOnly("Étape 3: Délimitation des blocs partenaires basée sur le cycle des dates..."); // Changement ici
+            // Étape 3: Nouvelle logique de délimitation des blocs
+            LogOnly("Étape 3: Délimitation des blocs partenaires basée sur la nouvelle logique...");
             List<(int startRow, int endRow)> partnerBlocks = new List<(int startRow, int endRow)>();
-            DateTime? previousDate = null;
             int? currentBlockStartRow = null;
 
-            currentBlockStartRow = dateLines[0] - 1;
-            LogOnly($"Début de la délimitation des blocs. Premier bloc potentiel commence à la ligne {currentBlockStartRow}"); // Changement ici
-
-
-            for (int i = 0; i < dateLines.Count; i++)
+            // Le premier bloc commence à la ligne qui précède la première date
+            if (dateLines.Count > 0)
             {
-                cancellationToken.ThrowIfCancellationRequested();
-                int currentRowDateIndex = dateLines[i];
-                DateTime currentDate;
-
-                if (!DateTime.TryParse(worksheet.Cell(currentRowDateIndex, 1).GetString(), out currentDate))
-                {
-                    LogOnly($"Avertissement: Impossible de parser la date à la ligne {currentRowDateIndex}. La ligne sera ignorée pour la délimitation."); // Changement ici
-                    continue;
-                }
-
-                if (previousDate.HasValue && currentDate <= previousDate.Value)
-                {
-                    if (currentBlockStartRow.HasValue)
-                    {
-                        LogOnly($"Bloc délimité : lignes {currentBlockStartRow.Value} à {currentRowDateIndex - 2}"); // Changement ici
-                        partnerBlocks.Add((currentBlockStartRow.Value, currentRowDateIndex - 2));
-                    }
-                    currentBlockStartRow = currentRowDateIndex - 1;
-                    LogOnly($"Nouveau cycle de date détecté. Nouveau bloc commence à la ligne {currentBlockStartRow}"); // Changement ici
-                }
-
-                previousDate = currentDate;
+                currentBlockStartRow = Math.Max(1, dateLines[0] - 1);
+                LogOnly($"Premier bloc commence à la ligne {currentBlockStartRow}");
             }
 
+            for (int row = 1; row <= lastRow; row++)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var cell = worksheet.Cell(row, 1);
+                string text = cell.GetString();
+                bool isDate = DateTime.TryParse(text, out _);
+                bool isColorIndex64 = cell.Style.Fill.BackgroundColor.ColorType == XLColorType.Indexed && cell.Style.Fill.BackgroundColor.Indexed == 64;
+
+                // Vérifier si la ligne déclenche un nouveau bloc
+                if (!isDate && !isColorIndex64 && currentBlockStartRow.HasValue && row > currentBlockStartRow.Value)
+                {
+                    // Fermer le bloc précédent
+                    partnerBlocks.Add((currentBlockStartRow.Value, row - 1));
+                    LogOnly($"Bloc délimité : lignes {currentBlockStartRow.Value} à {row - 1}");
+                    currentBlockStartRow = row; // Nouveau bloc commence à la ligne courante
+                    LogOnly($"Nouveau bloc commence à la ligne {currentBlockStartRow}");
+                }
+            }
+
+            // Ajouter le dernier bloc
             if (currentBlockStartRow.HasValue)
             {
                 partnerBlocks.Add((currentBlockStartRow.Value, lastRow));
-                LogOnly($"Dernier bloc délimité : lignes {currentBlockStartRow.Value} à {lastRow}"); // Changement ici
+                LogOnly($"Dernier bloc délimité : lignes {currentBlockStartRow.Value} à {lastRow}");
             }
 
             int totalPartners = partnerBlocks.Count;
-            await LogAndSend($"Total de {totalPartners} blocs partenaires identifiés.", cancellationToken); // Reste important pour l'utilisateur
-
+            await LogAndSend($"Total de {totalPartners} blocs partenaires identifiés.", cancellationToken);
 
             if (totalPartners == 0)
             {
@@ -179,7 +236,7 @@ namespace ExcelFlow.Services
             if (startIndex >= totalPartners) startIndex = totalPartners - 1;
             if (count < 1) count = 1;
             if (count > totalPartners - startIndex) count = totalPartners - startIndex;
-            await LogAndSend($"Traitement prévu pour {count} blocs partenaires, à partir de l'index {startIndex}.", cancellationToken); // Reste important pour l'utilisateur
+            await LogAndSend($"Traitement prévu pour {count} blocs partenaires, à partir de l'index {startIndex}.", cancellationToken);
 
             // Initialisation de la progression
             await _hubContext.Clients.All.SendAsync("ReceiveProgress", new
@@ -187,43 +244,41 @@ namespace ExcelFlow.Services
                 Current = 0,
                 Total = count,
                 Percentage = 0,
-                Message = "Début de la génération des fichiers partenaires." // Message initial pour l'utilisateur
+                Message = "Début de la génération des fichiers partenaires."
             }, cancellationToken);
 
-            LogOnly($"--- Début de la génération des fichiers Excel par partenaire ---"); // Changement ici
+            LogOnly($"--- Début de la génération des fichiers Excel par partenaire ---");
 
-            // 3. Boucle principale pour traiter chaque bloc identifié
+            // Boucle principale pour traiter chaque bloc identifié
             for (int i = startIndex; i < startIndex + count; i++)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-
                 var (blockStartRow, blockEndRow) = partnerBlocks[i];
 
                 try
                 {
                     string partnerName = worksheet.Row(blockStartRow).Cell(1).GetString().Trim();
-                    LogOnly($"Traitement du partenaire '{partnerName}' (Bloc {i + 1}/{totalPartners} - Lignes {blockStartRow}-{blockEndRow})"); // Changement ici
+                    LogOnly($"Traitement du partenaire '{partnerName}' (Bloc {i + 1}/{totalPartners} - Lignes {blockStartRow}-{blockEndRow})");
 
                     DateTime blockDate = DateTime.MinValue;
                     var cellForBlockDate = worksheet.Cell(blockStartRow + 1, 1);
                     if (DateTime.TryParse(cellForBlockDate.GetString(), out DateTime parsedDate))
                     {
                         blockDate = parsedDate;
-                        LogOnly($"  - Date de début du bloc détectée : {blockDate:dd.MM.yyyy}"); // Changement ici
+                        LogOnly($"  - Date de début du bloc détectée : {blockDate:dd.MM.yyyy}");
                     }
                     else
                     {
-                        LogOnly($"  - ⚠️ Aucune date valide trouvée à la ligne {blockStartRow + 1} pour le bloc '{partnerName}'."); // Changement ici
+                        LogOnly($"  - ⚠️ Aucune date valide trouvée à la ligne {blockStartRow + 1} pour le bloc '{partnerName}'.");
                     }
 
-
-                    LogOnly($"  - Ouverture du fichier template : {templatePath}"); // Changement ici
+                    LogOnly($"  - Ouverture du fichier template : {templatePath}");
                     using var templateWb = new XLWorkbook(templatePath);
                     var templateWs = templateWb.Worksheet(1);
-                    LogOnly("  - Template ouvert avec succès."); // Changement ici
+                    LogOnly("  - Template ouvert avec succès.");
 
                     int currentTargetRow = 3;
-                    LogOnly($"  - Copie des lignes du bloc ({blockStartRow} à {blockEndRow}) vers le template (à partir de la ligne {currentTargetRow})..."); // Changement ici
+                    LogOnly($"  - Copie des lignes du bloc ({blockStartRow} à {blockEndRow}) vers le template (à partir de la ligne {currentTargetRow})...");
                     for (int r = blockStartRow; r <= blockEndRow; r++)
                     {
                         cancellationToken.ThrowIfCancellationRequested();
@@ -239,13 +294,10 @@ namespace ExcelFlow.Services
                         }
                         currentTargetRow++;
                     }
-                    LogOnly($"  - {blockEndRow - blockStartRow + 1} lignes copiées dans le template."); // Changement ici
-
+                    LogOnly($"  - {blockEndRow - blockStartRow + 1} lignes copiées dans le template.");
 
                     // Ajuster automatiquement la largeur des colonnes de la feuille principale
                     templateWs.Columns().AdjustToContents();
-
-                    // Ajouter +5 à chaque colonne après l'ajustement automatique
                     foreach (var column in templateWs.ColumnsUsed())
                     {
                         column.Width += 8;
@@ -256,30 +308,27 @@ namespace ExcelFlow.Services
                     templateWs.Style.Font.FontName = "Calibri";
                     templateWs.Style.Font.FontSize = 10;
 
-
-
                     int templateLastRow = templateWs.LastRowUsed()?.RowNumber() ?? 0;
                     if (templateLastRow >= currentTargetRow)
                     {
-                        LogOnly($"  - Suppression des lignes excédentaires du template (lignes {currentTargetRow} à {templateLastRow})..."); // Changement ici
+                        LogOnly($"  - Suppression des lignes excédentaires du template (lignes {currentTargetRow} à {templateLastRow})...");
                         for (int rowToDelete = templateLastRow; rowToDelete >= currentTargetRow; rowToDelete--)
                         {
                             cancellationToken.ThrowIfCancellationRequested();
                             templateWs.Row(rowToDelete).Delete();
                         }
-                        LogOnly("  - Lignes excédentaires supprimées."); // Changement ici
+                        LogOnly("  - Lignes excédentaires supprimées.");
                     }
                     else
                     {
-                        LogOnly("  - Aucune ligne excédentaire à supprimer dans le template."); // Changement ici
+                        LogOnly("  - Aucune ligne excédentaire à supprimer dans le template.");
                     }
 
-
-                    //AJOUT DES FEUILLES SUPPLÉMENTAIRES ICI
-                    LogOnly($"  - Ajout des feuilles supplémentaires pour '{partnerName}'..."); // Changement ici
+                    // Ajout des feuilles supplémentaires
+                    LogOnly($"  - Ajout des feuilles supplémentaires pour '{partnerName}'...");
                     var feuillesAScanner = new List<string> { "Activité nette à J", "J+1", "Regul" };
                     await AddSupplementarySheetsAsync(worksheet.Workbook, templateWb, partnerName, feuillesAScanner, cancellationToken);
-                    LogOnly($"  - Traitement des feuilles supplémentaires terminé pour '{partnerName}'."); // Changement ici
+                    LogOnly($"  - Traitement des feuilles supplémentaires terminé pour '{partnerName}'.");
 
                     // Création du nom de fichier de sortie
                     string safePartnerName = string.Concat(partnerName.Split(Path.GetInvalidFileNameChars()));
@@ -287,11 +336,10 @@ namespace ExcelFlow.Services
                     string outputFileName = $"COMPTE SUPPORT {safePartnerName} du {dateRange}.xlsx";
                     string outputPath = Path.Combine(outputDir, outputFileName);
 
-                    LogOnly($"  - Sauvegarde du fichier : {outputFileName} dans {outputDir}");
+                    LogOnly($"  - Sauvegarde du fichier : {outputFileName} dans {outputDir}");
                     templateWb.SaveAs(outputPath);
                     await LogAndSend($"✅ Fichier '{outputFileName}' généré avec succès.", cancellationToken);
                 }
-
                 catch (OperationCanceledException)
                 {
                     await LogAndSend("❌ Génération annulée par l'utilisateur.", CancellationToken.None);
@@ -300,24 +348,20 @@ namespace ExcelFlow.Services
                 catch (Exception ex)
                 {
                     string blockTitle = (blockStartRow > 0 && blockStartRow <= lastRow) ? worksheet.Row(blockStartRow).Cell(1).GetString() : "Inconnu";
-                    await LogAndSend($"❌ Erreur inattendue lors de la génération du fichier pour le bloc '{blockTitle}' (lignes {blockStartRow}-{blockEndRow}) : {ex.Message}", CancellationToken.None); // Message important pour l'utilisateur
-                    LogOnly($"(Détails erreur: {ex.StackTrace})"); // StackTrace seulement en console
+                    await LogAndSend($"❌ Erreur inattendue lors de la génération du fichier pour le bloc '{blockTitle}' (lignes {blockStartRow}-{blockEndRow}) : {ex.Message}", CancellationToken.None);
+                    LogOnly($"(Détails erreur: {ex.StackTrace})");
                 }
 
                 int currentProcessed = i - startIndex + 1;
                 double percentage = (double)currentProcessed / count * 100;
 
-                // --- MODIFICATION ICI : Utilisation de ProgressUpdate pour l'envoi ---
-                await _hubContext.Clients.All.SendAsync("ReceiveProgress", new ProgressUpdate // <-- UTILISEZ ProgressUpdate ICI
+                await _hubContext.Clients.All.SendAsync("ReceiveProgress", new
                 {
                     Current = currentProcessed,
                     Total = count,
                     Percentage = (int)percentage,
                     Message = $"Progression : {(int)percentage}% - Fichier {currentProcessed} sur {count} généré."
                 }, cancellationToken);
-
-                //await LogAndSend($"Progression : {(int)percentage}% - Fichier {currentProcessed} sur {count} généré.", cancellationToken);
-
             }
 
             // Message final de progression (100%)
@@ -326,10 +370,9 @@ namespace ExcelFlow.Services
                 Current = count,
                 Total = count,
                 Percentage = 100,
-                Message = "Génération terminée." // Message final pour l'utilisateur
+                Message = "Génération terminée."
             }, cancellationToken);
-            await LogAndSend("--- Processus de génération des fichiers partenaires terminé ---", cancellationToken); // Final summary
-
+            await LogAndSend("--- Processus de génération des fichiers partenaires terminé ---", cancellationToken);
         }
 
         public Task AddSupplementarySheetsAsync(
