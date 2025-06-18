@@ -25,6 +25,11 @@ namespace ExcelFlow.Views
         private string _generatedFilesFolderPath = "";
         private string _partnerEmailFilePath = "";
 
+
+        public string SmtpHost { get; set; } = string.Empty;
+        public int SmtpPort { get; set; }
+        public string SmtpFromEmail { get; set; } = string.Empty;
+
         // Implémentation de l'interface IClosableView
         public bool IsOperationInProgress => _cts != null && !_cts.IsCancellationRequested;
 
@@ -40,6 +45,8 @@ namespace ExcelFlow.Views
         public SendEmailView()
         {
             InitializeComponent();
+
+
 
             _sendEmailService = new SendEmailService("https://localhost:7274");
             _hubConnection = new HubConnectionBuilder()
@@ -120,6 +127,8 @@ namespace ExcelFlow.Views
                 Dispatcher.Invoke(() => AppendLog($"❌ Connexion au hub fermée : {ex?.Message}"));
                 return Task.CompletedTask;
             };
+
+
 
             this.Loaded += SendEmailView_Loaded;
             SetUiEnabledState(true);
@@ -232,7 +241,6 @@ namespace ExcelFlow.Views
             List<string> bccRecipients = BccRecipientsTextBox.Text.Split(new[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToList();
 
             SetUiEnabledState(false);
-
             var request = new EmailSendRequest
             {
                 GeneratedFilesFolderPath = _generatedFilesFolderPath,
@@ -241,6 +249,15 @@ namespace ExcelFlow.Views
                 CcRecipients = ccRecipients,
                 BccRecipients = bccRecipients
             };
+
+            if (!string.IsNullOrWhiteSpace(this.SmtpHost)
+     && this.SmtpPort > 0
+     && !string.IsNullOrWhiteSpace(this.SmtpFromEmail))
+            {
+                request.SmtpHost = this.SmtpHost;
+                request.SmtpPort = this.SmtpPort;
+                request.SmtpFromEmail = this.SmtpFromEmail;
+            }
 
             _cts = new CancellationTokenSource();
 

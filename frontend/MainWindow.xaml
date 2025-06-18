@@ -5,20 +5,32 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
         Title="ExcelFlow - © 2025 WAFACASH ALL RIGHTS RESERVED"
-        Height="700" Width="1000" MinHeight="600" MinWidth="800"
+        Height="700"
+        Width="1000"
+        MinHeight="600"
+        MinWidth="800"
         WindowStartupLocation="CenterScreen"
         Icon="/Assets/Icons/wafacash.ico">
 
     <Window.Resources>
-        <Style TargetType="Button" x:Key="NavigationButtonStyle">
-            <Setter Property="Height" Value="40"/>
-            <Setter Property="Margin" Value="0 5 0 0"/>
-            <Setter Property="HorizontalAlignment" Value="Stretch"/>
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderBrush" Value="Transparent"/>
-            <Setter Property="Foreground" Value="#333333"/>
-            <Setter Property="FontSize" Value="14"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
+        <Style TargetType="Button"
+                x:Key="NavigationButtonStyle">
+            <Setter Property="Height"
+                    Value="40"/>
+            <Setter Property="Margin"
+                    Value="0 5 0 0"/>
+            <Setter Property="HorizontalAlignment"
+                    Value="Stretch"/>
+            <Setter Property="Background"
+                    Value="Transparent"/>
+            <Setter Property="BorderBrush"
+                    Value="Transparent"/>
+            <Setter Property="Foreground"
+                    Value="#333333"/>
+            <Setter Property="FontSize"
+                    Value="14"/>
+            <Setter Property="FontWeight"
+                    Value="SemiBold"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
@@ -31,13 +43,19 @@
                                               TextElement.Foreground="{TemplateBinding Foreground}"/>
                         </Border>
                         <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#E0E0E0"/>
-                                <Setter Property="Foreground" Value="#000000"/>
+                            <Trigger Property="IsMouseOver"
+                                    Value="True">
+                                <Setter Property="Background"
+                                        Value="#E0E0E0"/>
+                                <Setter Property="Foreground"
+                                        Value="#000000"/>
                             </Trigger>
-                            <Trigger Property="IsPressed" Value="True">
-                                <Setter Property="Background" Value="#CCCCCC"/>
-                                <Setter Property="Foreground" Value="#000000"/>
+                            <Trigger Property="IsPressed"
+                                    Value="True">
+                                <Setter Property="Background"
+                                        Value="#CCCCCC"/>
+                                <Setter Property="Foreground"
+                                        Value="#000000"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -45,15 +63,25 @@
             </Setter>
         </Style>
 
-        <Style TargetType="Button" BasedOn="{StaticResource NavigationButtonStyle}" x:Key="ActiveNavigationButtonStyle">
-            <Setter Property="Background" Value="#007ACC"/> <Setter Property="Foreground" Value="White"/>
-            <Setter Property="FontWeight" Value="Bold"/>
+        <Style TargetType="Button"
+                BasedOn="{StaticResource NavigationButtonStyle}"
+                x:Key="ActiveNavigationButtonStyle">
+            <Setter Property="Background"
+                    Value="#007ACC"/>
+            <Setter Property="Foreground"
+                    Value="White"/>
+            <Setter Property="FontWeight"
+                    Value="Bold"/>
             <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#005C99"/>
+                <Trigger Property="IsMouseOver"
+                        Value="True">
+                    <Setter Property="Background"
+                            Value="#005C99"/>
                 </Trigger>
-                <Trigger Property="IsPressed" Value="True">
-                    <Setter Property="Background" Value="#004C88"/>
+                <Trigger Property="IsPressed"
+                        Value="True">
+                    <Setter Property="Background"
+                            Value="#004C88"/>
                 </Trigger>
             </Style.Triggers>
         </Style>
@@ -61,9 +89,14 @@
 
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="200"/> <ColumnDefinition Width="*"/>   </Grid.ColumnDefinitions>
+            <ColumnDefinition Width="200"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
 
-        <Border Grid.Column="0" Background="#F8F8F8" BorderBrush="#EEEEEE" BorderThickness="0 0 1 0">
+        <Border Grid.Column="0"
+                Background="#F8F8F8"
+                BorderBrush="#EEEEEE"
+                BorderThickness="0 0 1 0">
             <StackPanel Margin="10">
                 <TextBlock Text="ExcelFlow"
                            FontSize="24"
@@ -74,17 +107,26 @@
 
                 <Button Content="Génération de rapports"
                         Style="{StaticResource NavigationButtonStyle}"
-                        Tag="GenerationView"  Click="NavigationButton_Click"/>
+                        Tag="GenerationView"
+                        Click="NavigationButton_Click"/>
 
                 <Button Content="Envoi des Emails"
                         Style="{StaticResource NavigationButtonStyle}"
-                        Tag="SendEmailView"  Click="NavigationButton_Click"/>
+                        Tag="SendEmailView"
+                        Click="NavigationButton_Click"/>
 
-                </StackPanel>
+                <!-- Nouveau bouton pour SMTP Settings -->
+                <Button Content="Configuration SMTP"
+                        Style="{StaticResource NavigationButtonStyle}"
+                        Tag="SmtpSettingsView"
+                        Click="NavigationButton_Click"/>
+            </StackPanel>
         </Border>
 
-        <Border Grid.Column="1" Background="White" Padding="20">
-            <ContentControl x:Name="MainContentControl" />
+        <Border Grid.Column="1"
+                Background="White"
+                Padding="20">
+            <ContentControl x:Name="MainContentControl"/>
         </Border>
     </Grid>
 </Window>

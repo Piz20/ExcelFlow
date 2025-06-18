@@ -303,3 +303,5 @@ C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\frontend\bin\Debug\net9.0-windows\
 C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\frontend\bin\Debug\net9.0-windows\backend\Microsoft.Extensions.Primitives.dll
 C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\frontend\bin\Debug\net9.0-windows\backend\Microsoft.Xaml.Behaviors.dll
 C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\frontend\bin\Debug\net9.0-windows\backend\Newtonsoft.Json.dll
+C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\frontend\obj\Debug\net9.0-windows\Views\SmtpSettingsView.baml
+C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\frontend\obj\Debug\net9.0-windows\Views\SmtpSettingsView.g.cs

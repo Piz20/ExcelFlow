@@ -1,0 +1,40 @@
+<UserControl x:Class="ExcelFlow.Views.SmtpSettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Height="Auto" Width="Auto">
+    <StackPanel Margin="15" Orientation="Vertical" HorizontalAlignment="Left" Width="350">
+
+        <!-- SMTP Hôte -->
+        <TextBlock Text="Hôte SMTP :" 
+                   Margin="0,0,0,4"
+                   FontWeight="SemiBold" />
+        <TextBox x:Name="SmtpHostTextBox" 
+                 Width="350" 
+                 Margin="0,0,0,12"
+                 ToolTip="Adresse du serveur SMTP (exemple : smtp.exemple.com)" />
+
+        <!-- SMTP Port -->
+        <TextBlock Text="Port SMTP :" 
+                   Margin="0,0,0,4"
+                   FontWeight="SemiBold" />
+        <TextBox x:Name="SmtpPortTextBox" 
+                 Width="120" 
+                 Margin="0,0,0,12"
+                 ToolTip="Numéro de port du serveur SMTP (exemple : 587)" />
+
+        <!-- Email Expéditeur -->
+        <TextBlock Text="Adresse e-mail de l'expéditeur :" 
+                   Margin="0,0,0,4"
+                   FontWeight="SemiBold" />
+        <TextBox x:Name="SmtpFromEmailTextBox" 
+                 Width="350" 
+                 Margin="0,0,0,16"
+                 ToolTip="Adresse e-mail utilisée comme expéditeur des messages" />
+
+        <!-- Bouton Sauvegarder -->
+        <Button Content="Sauvegarder" 
+                Width="120" 
+                HorizontalAlignment="Left" 
+                Click="SaveButton_Click"/>
+    </StackPanel>
+</UserControl>
