@@ -218,6 +218,11 @@ namespace ExcelFlow.Views
             }
         }
 
+        private void ClearLogs_Click(object sender, RoutedEventArgs e)
+        {
+            TxtLogs.Clear();
+        }
+
         private void ClearSourceFileButton_Click(object sender, RoutedEventArgs e)
         {
             TxtSourceFilePath.Text = string.Empty;

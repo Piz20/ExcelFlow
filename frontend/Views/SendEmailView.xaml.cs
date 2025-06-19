@@ -310,6 +310,10 @@ namespace ExcelFlow.Views
             }
         }
 
+ private void ClearLogs_Click(object sender, RoutedEventArgs e)
+        {
+            TxtLogs.Clear();
+        }
         private void SetUiEnabledState(bool enabled)
         {
             StartSendingButton.IsEnabled = enabled;
