@@ -11,6 +11,8 @@ using WinForms = System.Windows.Forms;
 using WpfMsgBox = System.Windows.MessageBox;
 using WpfOpenFileDialog = Microsoft.Win32.OpenFileDialog;
 using System.IO;
+using System.Text.Json;
+
 using ExcelFlow.Services;
 using ExcelFlow.Utilities; // Contient IClosableView
 
@@ -22,9 +24,18 @@ namespace ExcelFlow.Views
         private readonly GenerationService _generationService;
         private CancellationTokenSource? _cts;
 
-        public GenerationView()
+
+        private AppConfig _appConfig;
+        public GenerationView(AppConfig config)
         {
             InitializeComponent();
+
+            _appConfig = config;
+
+            // Pré-remplir les champs s’il y a des valeurs en mémoire
+            TxtSourceFilePath.Text = _appConfig.Generation.SourcePath ?? "";
+            TxtTemplateFilePath.Text = _appConfig.Generation.TemplatePath ?? "";
+            TxtOutputDir.Text = _appConfig.Generation.OutputDir ?? "";
 
             _generationService = new GenerationService("http://localhost:5297");
 
@@ -205,6 +216,23 @@ namespace ExcelFlow.Views
                 ProgressPercentageText.Visibility = Visibility.Collapsed;
                 _cts?.Dispose();
                 _cts = null;
+
+                // Mise à jour de la config par défaut
+                _appConfig.Generation.SourcePath = TxtSourceFilePath.Text;
+                _appConfig.Generation.TemplatePath = TxtTemplateFilePath.Text;
+                _appConfig.Generation.OutputDir = TxtOutputDir.Text;
+
+                // Sauvegarde dans le fichier
+                try
+                {
+                    var json = JsonSerializer.Serialize(_appConfig, new JsonSerializerOptions { WriteIndented = true });
+                    File.WriteAllText("appconfigs.json", json);  // Ou ton chemin config
+                }
+                catch (Exception ex)
+                {
+                    AppendLog($"⚠️ Erreur lors de l'enregistrement des préférences : {ex.Message}");
+                }
+
                 AppendLog("Processus de génération terminé ou annulé.");
             }
         }

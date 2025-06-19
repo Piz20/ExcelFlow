@@ -11,6 +11,9 @@ using WpfOpenFileDialog = Microsoft.Win32.OpenFileDialog;
 using System.Collections.Generic;
 using System.Linq;
 using ExcelFlow.Models;
+using System.Text.Json;
+using System.IO;
+
 using ExcelFlow.Services;
 using WpfMsgBox = System.Windows.MessageBox;
 using ExcelFlow.Utilities; // Pour IClosableView et AppConstants
@@ -24,6 +27,8 @@ namespace ExcelFlow.Views
         private CancellationTokenSource? _cts;
         private string _generatedFilesFolderPath = "";
         private string _partnerEmailFilePath = "";
+
+        private AppConfig _appConfig;
 
 
         public string SmtpHost { get; set; } = string.Empty;
@@ -42,11 +47,12 @@ namespace ExcelFlow.Views
             );
         }
 
-        public SendEmailView()
+
+        public SendEmailView(AppConfig config)
         {
             InitializeComponent();
 
-
+            _appConfig = config;
 
             _sendEmailService = new SendEmailService("https://localhost:7274");
             _hubConnection = new HubConnectionBuilder()
@@ -54,8 +60,12 @@ namespace ExcelFlow.Views
                 .WithAutomaticReconnect()
                 .Build();
 
-            // Pré-remplir le TextBox avec la constante
-            FromDisplayNameTextBox.Text = AppConstants.DefaultFromDisplayName;
+            // Pré-remplissage à partir de la config
+            PartnerEmailFilePathTextBox.Text = _appConfig.SendEmail.PartnerEmailFilePath ?? "";
+            GeneratedFilesFolderTextBox.Text = _appConfig.SendEmail.GeneratedFilesFolderPath ?? "";
+            FromDisplayNameTextBox.Text = _appConfig.SendEmail.FromDisplayName ?? "";
+            CcRecipientsTextBox.Text = _appConfig.SendEmail.CcRecipients ?? "";
+            BccRecipientsTextBox.Text = _appConfig.SendEmail.BccRecipients ?? "";
 
             // Initialisation des visibilités des éléments de progression
             ProgressBar.Visibility = Visibility.Collapsed;
@@ -243,11 +253,17 @@ namespace ExcelFlow.Views
             SetUiEnabledState(false);
             var request = new EmailSendRequest
             {
-                GeneratedFilesFolderPath = _generatedFilesFolderPath,
-                PartnerEmailFilePath = _partnerEmailFilePath,
-                FromDisplayName = fromDisplayName,
-                CcRecipients = ccRecipients,
-                BccRecipients = bccRecipients
+                GeneratedFilesFolderPath = GeneratedFilesFolderTextBox.Text.Trim(),
+                PartnerEmailFilePath = PartnerEmailFilePathTextBox.Text.Trim(),
+                FromDisplayName = FromDisplayNameTextBox.Text.Trim(),
+                CcRecipients = CcRecipientsTextBox.Text
+                   .Split(new[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries)
+                   .Select(s => s.Trim())
+                   .ToList(),
+                BccRecipients = BccRecipientsTextBox.Text
+                    .Split(new[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(s => s.Trim())
+                    .ToList()
             };
 
             if (!string.IsNullOrWhiteSpace(this.SmtpHost)
@@ -297,6 +313,24 @@ namespace ExcelFlow.Views
                 ProgressMessageTextBlock.Visibility = Visibility.Collapsed;
                 _cts?.Dispose();
                 _cts = null;
+
+                // Sauvegarde des préférences d’envoi
+                _appConfig.SendEmail.PartnerEmailFilePath = PartnerEmailFilePathTextBox.Text.Trim();
+                _appConfig.SendEmail.GeneratedFilesFolderPath = GeneratedFilesFolderTextBox.Text.Trim();
+                _appConfig.SendEmail.FromDisplayName = FromDisplayNameTextBox.Text.Trim();
+                _appConfig.SendEmail.CcRecipients = CcRecipientsTextBox.Text.Trim();
+                _appConfig.SendEmail.BccRecipients = BccRecipientsTextBox.Text.Trim();
+
+                try
+                {
+                    var json = JsonSerializer.Serialize(_appConfig, new JsonSerializerOptions { WriteIndented = true });
+                    File.WriteAllText("appconfigs.json", json);
+                    AppendLog("💾 Préférences d'envoi sauvegardées.");
+                }
+                catch (Exception ex)
+                {
+                    AppendLog($"⚠️ Impossible de sauvegarder les préférences : {ex.Message}");
+                }
                 AppendLog("Processus d'envoi d'emails terminé ou annulé.");
             }
         }
@@ -310,7 +344,7 @@ namespace ExcelFlow.Views
             }
         }
 
- private void ClearLogs_Click(object sender, RoutedEventArgs e)
+        private void ClearLogs_Click(object sender, RoutedEventArgs e)
         {
             TxtLogs.Clear();
         }
