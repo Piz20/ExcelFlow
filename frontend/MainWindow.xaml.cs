@@ -37,19 +37,10 @@ namespace ExcelFlow
 
             _generationView = new GenerationView(_appConfig);
             _sendEmailView = new SendEmailView(_appConfig);
-            _smtpSettingsView = new SmtpSettingsView();
+            _smtpSettingsView = new SmtpSettingsView(_appConfig);
 
+          
 
-
-    
-
-
-            if (_smtpSettingsView != null)
-            {
-                _smtpSettingsView.SmtpConfigChanged += OnAppConfigChanged;
-            }
-
-            ApplyAppConfigToViews();
 
             var initialButton = this.FindName("GenerationViewButton") as WpfControls.Button;
             if (initialButton == null)
@@ -61,71 +52,11 @@ namespace ExcelFlow
             NavigateToView("GenerationView", initialButton);
         }
 
-        private void OnAppConfigChanged(SmtpConfig newConfig)
-        {
-            _appConfig.Smtp = newConfig;
+        
 
-            ApplyAppConfigToViews();
-            SaveAppConfig();
-        }
+   
 
-        private void ApplyAppConfigToViews()
-        {
-            if (_sendEmailView != null)
-            {
-                _sendEmailView.SmtpHost = _appConfig.Smtp.SmtpHost;
-                _sendEmailView.SmtpPort = _appConfig.Smtp.SmtpPort ?? 587;
-                _sendEmailView.SmtpFromEmail = _appConfig.Smtp.SmtpFromEmail;
-            }
-
-            if (_smtpSettingsView != null)
-            {
-                _smtpSettingsView.SmtpHost = _appConfig.Smtp.SmtpHost;
-                _smtpSettingsView.SmtpPort = _appConfig.Smtp.SmtpPort ?? 587;
-                _smtpSettingsView.SmtpFromEmail = _appConfig.Smtp.SmtpFromEmail;
-            }
-        }
-
-        private AppConfig LoadAppConfig()
-        {
-            try
-            {
-                if (File.Exists(ConfigFilePath))
-                {
-                    var json = File.ReadAllText(ConfigFilePath);
-                    var config = JsonSerializer.Deserialize<AppConfig>(json);
-                    if (config != null) return config;
-                }
-            }
-            catch (Exception ex)
-            {
-                WpfMsgBox.Show($"Erreur lors du chargement de la configuration : {ex.Message}", "Erreur", WpsMsgBoxButton.OK, WpsMsgBoxImage.Error);
-            }
-
-            return new AppConfig
-            {
-                Smtp = new SmtpConfig
-                {
-                    SmtpHost = "smtp.example.com",
-                    SmtpPort = 587,
-                    SmtpFromEmail = "noreply@example.com"
-                }
-            };
-        }
-
-        private void SaveAppConfig()
-        {
-            try
-            {
-                var json = JsonSerializer.Serialize(_appConfig, new JsonSerializerOptions { WriteIndented = true });
-                File.WriteAllText(ConfigFilePath, json);
-            }
-            catch (Exception ex)
-            {
-                WpfMsgBox.Show($"Erreur lors de la sauvegarde de la configuration : {ex.Message}", "Erreur", WpsMsgBoxButton.OK, WpsMsgBoxImage.Error);
-            }
-        }
-
+    
         // Gestion clic boutons navigation
         // Gestion clic boutons navigation
         private void NavigationButton_Click(object sender, RoutedEventArgs e)
@@ -158,12 +89,10 @@ namespace ExcelFlow
                     break;
 
                 case "SendEmailView":
-                    ApplyAppConfigToViews();
                     MainContentControl.Content = _sendEmailView;
                     break;
 
                 case "SmtpSettingsView":
-                    ApplyAppConfigToViews();
                     MainContentControl.Content = _smtpSettingsView;
                     break;
 
