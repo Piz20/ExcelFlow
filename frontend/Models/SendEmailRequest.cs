@@ -7,7 +7,7 @@ namespace ExcelFlow.Models
     {
         public string GeneratedFilesFolderPath { get; set; } = string.Empty;
         public string PartnerEmailFilePath { get; set; } = string.Empty;
-        public string? FromDisplayName { get; set; } = "WAFACASH CENTRAL AFRICA";
+        public string? FromDisplayName { get; set; } = "WAFACASH CENTRAL AFRICA LIMITED";
 
         public List<string> CcRecipients { get; set; } = new List<string>();
         public List<string> BccRecipients { get; set; } = new List<string>();

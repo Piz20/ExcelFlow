@@ -162,7 +162,7 @@ namespace ExcelFlow.Services
                     await client.DisconnectAsync(true, cancellationToken);
                 }
 
-                await LogAndSend($"Email envoyé avec succès à {string.Join(", ", allRecipientsForLogging)}.", cancellationToken);
+                await LogAndSend($"✅Email envoyé avec succès à {string.Join(", ", allRecipientsForLogging)}.", cancellationToken);
                 return true;
             }
             catch (OperationCanceledException)

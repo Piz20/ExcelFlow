@@ -123,6 +123,7 @@ public async Task SendEmailsToPartnersWithAttachments(
     string? smtpFromEmail = null,
     string? smtpHost = null,
     int? smtpPort = null,
+    string? fromDisplayName = null ,
     List<string>? ccRecipients = null,
     List<string>? bccRecipients = null,
     CancellationToken cancellationToken = default)
@@ -233,7 +234,7 @@ public async Task SendEmailsToPartnersWithAttachments(
                 toRecipients: foundPartner.Emails,
                 ccRecipients: ccRecipients,
                 bccRecipients: bccRecipients,
-                fromDisplayName: smtpFromEmail,
+                fromDisplayName: fromDisplayName,
                 attachmentFilePaths: new List<string> { filePath },
                 smtpHost: smtpHost,
                 smtpPort: smtpPort,

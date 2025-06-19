@@ -55,6 +55,7 @@ public class PartnerEmailSenderController : ControllerBase
                 smtpFromEmail: request.SmtpFromEmail,
                 smtpHost: request.SmtpHost,
                 smtpPort: request.SmtpPort,
+                fromDisplayName : request.FromDisplayName ,
                 ccRecipients: request.CcRecipients,
                 bccRecipients: request.BccRecipients,
                 cancellationToken: cancellationToken
