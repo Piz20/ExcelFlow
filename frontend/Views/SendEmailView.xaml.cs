@@ -66,6 +66,10 @@ namespace ExcelFlow.Views
             FromDisplayNameTextBox.Text = _appConfig.SendEmail.FromDisplayName ?? "";
             CcRecipientsTextBox.Text = _appConfig.SendEmail.CcRecipients ?? "";
             BccRecipientsTextBox.Text = _appConfig.SendEmail.BccRecipients ?? "";
+            SmtpHost = _appConfig.Smtp.SmtpHost ?? "";
+            SmtpPort = _appConfig.Smtp.SmtpPort ?? 0;
+            SmtpFromEmail = _appConfig.Smtp.SmtpFromEmail ?? "";
+
 
             // Initialisation des visibilités des éléments de progression
             ProgressBar.Visibility = Visibility.Collapsed;
@@ -234,6 +238,13 @@ namespace ExcelFlow.Views
             TxtLogs.Clear();
             AppendLog("🚀 Début du processus d'envoi d'emails...\n");
 
+            // Récupération des valeurs à jour depuis l'interface
+            _generatedFilesFolderPath = GeneratedFilesFolderTextBox.Text.Trim();
+            _partnerEmailFilePath = PartnerEmailFilePathTextBox.Text.Trim();
+            string fromDisplayName = FromDisplayNameTextBox.Text.Trim();
+            string ccText = CcRecipientsTextBox.Text.Trim();
+            string bccText = BccRecipientsTextBox.Text.Trim();
+
             ProgressBar.Value = 0;
             ProgressTextBlock.Text = "0%";
             ProgressBar.Visibility = Visibility.Collapsed;
@@ -246,33 +257,28 @@ namespace ExcelFlow.Views
                 return;
             }
 
-            string fromDisplayName = FromDisplayNameTextBox.Text.Trim();
-            List<string> ccRecipients = CcRecipientsTextBox.Text.Split(new[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToList();
-            List<string> bccRecipients = BccRecipientsTextBox.Text.Split(new[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToList();
-
             SetUiEnabledState(false);
+
+            // Mise à jour des paramètres SMTP depuis l'AppConfig au moment du clic
+            SmtpHost = _appConfig.Smtp.SmtpHost ?? "";
+            SmtpPort = _appConfig.Smtp.SmtpPort ?? 0;
+            SmtpFromEmail = _appConfig.Smtp.SmtpFromEmail ?? "";
+
+
             var request = new EmailSendRequest
             {
-                GeneratedFilesFolderPath = GeneratedFilesFolderTextBox.Text.Trim(),
-                PartnerEmailFilePath = PartnerEmailFilePathTextBox.Text.Trim(),
-                FromDisplayName = FromDisplayNameTextBox.Text.Trim(),
-                CcRecipients = CcRecipientsTextBox.Text
-                   .Split(new[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries)
-                   .Select(s => s.Trim())
-                   .ToList(),
-                BccRecipients = BccRecipientsTextBox.Text
-                    .Split(new[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries)
-                    .Select(s => s.Trim())
-                    .ToList()
+                GeneratedFilesFolderPath = _generatedFilesFolderPath,
+                PartnerEmailFilePath = _partnerEmailFilePath,
+                FromDisplayName = fromDisplayName,
+                CcRecipients = ccText.Split(new[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToList(),
+                BccRecipients = bccText.Split(new[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToList()
             };
 
-            if (!string.IsNullOrWhiteSpace(this.SmtpHost)
-     && this.SmtpPort > 0
-     && !string.IsNullOrWhiteSpace(this.SmtpFromEmail))
+            if (!string.IsNullOrWhiteSpace(SmtpHost) && SmtpPort > 0 && !string.IsNullOrWhiteSpace(SmtpFromEmail))
             {
-                request.SmtpHost = this.SmtpHost;
-                request.SmtpPort = this.SmtpPort;
-                request.SmtpFromEmail = this.SmtpFromEmail;
+                request.SmtpHost = SmtpHost;
+                request.SmtpPort = SmtpPort;
+                request.SmtpFromEmail = SmtpFromEmail;
             }
 
             _cts = new CancellationTokenSource();
@@ -288,7 +294,7 @@ namespace ExcelFlow.Views
                 }
                 else if (_cts.IsCancellationRequested)
                 {
-                    // Déjà géré par OperationCanceledException
+                    // Opération annulée
                 }
                 else
                 {
@@ -314,12 +320,12 @@ namespace ExcelFlow.Views
                 _cts?.Dispose();
                 _cts = null;
 
-                // Sauvegarde des préférences d’envoi
-                _appConfig.SendEmail.PartnerEmailFilePath = PartnerEmailFilePathTextBox.Text.Trim();
-                _appConfig.SendEmail.GeneratedFilesFolderPath = GeneratedFilesFolderTextBox.Text.Trim();
-                _appConfig.SendEmail.FromDisplayName = FromDisplayNameTextBox.Text.Trim();
-                _appConfig.SendEmail.CcRecipients = CcRecipientsTextBox.Text.Trim();
-                _appConfig.SendEmail.BccRecipients = BccRecipientsTextBox.Text.Trim();
+                // Sauvegarde des préférences dans AppConfig
+                _appConfig.SendEmail.PartnerEmailFilePath = _partnerEmailFilePath;
+                _appConfig.SendEmail.GeneratedFilesFolderPath = _generatedFilesFolderPath;
+                _appConfig.SendEmail.FromDisplayName = fromDisplayName;
+                _appConfig.SendEmail.CcRecipients = ccText;
+                _appConfig.SendEmail.BccRecipients = bccText;
 
                 try
                 {
@@ -331,9 +337,11 @@ namespace ExcelFlow.Views
                 {
                     AppendLog($"⚠️ Impossible de sauvegarder les préférences : {ex.Message}");
                 }
+
                 AppendLog("Processus d'envoi d'emails terminé ou annulé.");
             }
         }
+
 
         private void CancelSendingButton_Click(object sender, RoutedEventArgs e)
         {

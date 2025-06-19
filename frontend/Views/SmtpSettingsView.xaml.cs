@@ -1,18 +1,15 @@
 using System;
 using System.Windows;
-using System.Linq;
-using System.Collections.Generic;
 using System.Windows.Controls;
 using ExcelFlow.Models;
-using ExcelFlow.Services;
 using ExcelFlow.Utilities;
-using Microsoft.Win32;
 using WpfMsgBox = System.Windows.MessageBox;
 using WpsMsgBoxImage = System.Windows.MessageBoxImage;
+using WpfControls = System.Windows.Controls;
 
 namespace ExcelFlow.Views
 {
-    public partial class SmtpSettingsView : UserControl, IClosableView
+    public partial class SmtpSettingsView : WpfControls.UserControl, IClosableView
     {
         private readonly AppConfig _appConfig;
         public event Action<SmtpConfig>? SmtpConfigChanged;
@@ -21,27 +18,29 @@ namespace ExcelFlow.Views
         {
             InitializeComponent();
             _appConfig = config;
-            SmtpHost = config.SmtpHost;
-            SmtpPort = config.SmtpPort;
-            SmtpFromEmail = config.SmtpFromEmail;
+
+            // Initialiser les champs avec les valeurs existantes
+            SmtpHost = _appConfig.Smtp.SmtpHost;
+            SmtpPort = _appConfig.Smtp.SmtpPort;
+            SmtpFromEmail = _appConfig.Smtp.SmtpFromEmail;
         }
 
         public string SmtpHost
         {
             get => SmtpHostTextBox.Text.Trim();
-            set => SmtpHostTextBox.Text = value ?? "";
+            set => SmtpHostTextBox.Text = value ?? string.Empty;
         }
 
         public int? SmtpPort
         {
             get => int.TryParse(SmtpPortTextBox.Text, out var port) ? port : null;
-            set => SmtpPortTextBox.Text = value?.ToString() ?? "";
+            set => SmtpPortTextBox.Text = value?.ToString() ?? string.Empty;
         }
 
         public string SmtpFromEmail
         {
             get => SmtpFromEmailTextBox.Text.Trim();
-            set => SmtpFromEmailTextBox.Text = value ?? "";
+            set => SmtpFromEmailTextBox.Text = value ?? string.Empty;
         }
 
         private void SaveButton_Click(object sender, RoutedEventArgs e)
@@ -50,16 +49,18 @@ namespace ExcelFlow.Views
             {
                 ShowMsg("Le champ SMTP Port est invalide."); return;
             }
+
             if (!string.IsNullOrWhiteSpace(SmtpFromEmail) && !IsValidEmail(SmtpFromEmail))
             {
                 ShowMsg("L'adresse e-mail de l'expéditeur est invalide."); return;
             }
 
-            _appConfig.SmtpHost = SmtpHost;
-            _appConfig.SmtpPort = SmtpPort;
-            _appConfig.SmtpFromEmail = SmtpFromEmail;
-            _appConfig.Save();
+            // Sauvegarder dans l’objet de configuration (même logique que SendEmail)
+            _appConfig.Smtp.SmtpHost = SmtpHost;
+            _appConfig.Smtp.SmtpPort = SmtpPort;
+            _appConfig.Smtp.SmtpFromEmail = SmtpFromEmail;
 
+            // Notifier les autres composants si besoin
             SmtpConfigChanged?.Invoke(new SmtpConfig
             {
                 SmtpHost = SmtpHost,

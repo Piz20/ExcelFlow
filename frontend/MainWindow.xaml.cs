@@ -39,7 +39,7 @@ namespace ExcelFlow
             _sendEmailView = new SendEmailView(_appConfig);
             _smtpSettingsView = new SmtpSettingsView(_appConfig);
 
-          
+
 
 
             var initialButton = this.FindName("GenerationViewButton") as WpfControls.Button;
@@ -52,11 +52,28 @@ namespace ExcelFlow
             NavigateToView("GenerationView", initialButton);
         }
 
-        
 
-   
 
-    
+
+        private AppConfig LoadAppConfig()
+        {
+            try
+            {
+                if (!File.Exists(ConfigFilePath))
+                    return new AppConfig();
+
+                string json = File.ReadAllText(ConfigFilePath);
+                var config = JsonSerializer.Deserialize<AppConfig>(json);
+                return config ?? new AppConfig();
+            }
+            catch (Exception ex)
+            {
+                WpfMsgBox.Show($"Erreur lors du chargement de la configuration : {ex.Message}", "Erreur", WpsMsgBoxButton.OK, WpsMsgBoxImage.Error);
+                return new AppConfig();
+            }
+        }
+
+
         // Gestion clic boutons navigation
         // Gestion clic boutons navigation
         private void NavigationButton_Click(object sender, RoutedEventArgs e)
