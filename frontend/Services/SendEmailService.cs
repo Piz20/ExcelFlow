@@ -28,10 +28,6 @@ namespace ExcelFlow.Services
         {
             try
             {
-                // Sérialisation en JSON pour inspection/debug
-                var jsonRequest = JsonSerializer.Serialize(request, new JsonSerializerOptions { WriteIndented = true });
-                Console.WriteLine("Request JSON envoyé :");
-                Console.WriteLine(jsonRequest);
 
                 var response = await _httpClient.PostAsJsonAsync("api/partneremailsender/prepare", request, cancellationToken);
                 response.EnsureSuccessStatusCode();
@@ -49,48 +45,40 @@ namespace ExcelFlow.Services
         /// <summary>
         /// Envoie la liste d'emails préparés en appelant l'API /send.
         /// </summary>
-        public async Task<string> SendPreparedEmailsAsync(List<EmailToSend> preparedEmails, CancellationToken cancellationToken)
+        public async Task<List<EmailSendResult>> SendPreparedEmailsAsync(List<EmailToSend> preparedEmails, CancellationToken cancellationToken)
         {
             try
             {
                 var response = await _httpClient.PostAsJsonAsync("api/partneremailsender/send", preparedEmails, cancellationToken);
                 response.EnsureSuccessStatusCode();
 
-                return await response.Content.ReadAsStringAsync();
+                var results = await response.Content.ReadFromJsonAsync<List<EmailSendResult>>(cancellationToken: cancellationToken);
+                return results ?? new List<EmailSendResult>();
             }
             catch (HttpRequestException ex)
             {
-                return $"❌ Erreur réseau ou serveur lors de l’envoi des emails préparés : {ex.Message}";
+                // Ici tu peux choisir de retourner une liste vide ou une liste avec un seul résultat d’erreur, selon ta logique
+                return new List<EmailSendResult>
+        {
+            new EmailSendResult { To = "", Success = false, ErrorMessage = $"❌ Erreur réseau ou serveur : {ex.Message}" }
+        };
             }
             catch (OperationCanceledException)
             {
-                return "⏹️ Envoi annulé.";
-            }
-            catch (Exception ex)
-            {
-                return $"❌ Erreur inattendue : {ex.Message}";
-            }
-        }
-
-        /// <summary>
-        /// Méthode regroupée qui prépare puis envoie les emails.
-        /// </summary>
-        public async Task<string> StartEmailSendingAsync(PrepareEmailRequest prepareRequest, CancellationToken cancellationToken)
+                return new List<EmailSendResult>
         {
-            try
-            {
-                var preparedEmails = await PrepareEmailsAsync(prepareRequest, cancellationToken);
-
-                if (preparedEmails == null || preparedEmails.Count == 0)
-                    return "❌ Aucun email préparé.";
-
-                var sendResult = await SendPreparedEmailsAsync(preparedEmails, cancellationToken);
-                return sendResult;
+            new EmailSendResult { To = "", Success = false, ErrorMessage = "⏹️ Envoi annulé." }
+        };
             }
             catch (Exception ex)
             {
-                return $"❌ Erreur inattendue lors du processus d'envoi : {ex.Message}";
+                return new List<EmailSendResult>
+        {
+            new EmailSendResult { To = "", Success = false, ErrorMessage = $"❌ Erreur inattendue : {ex.Message}" }
+        };
             }
         }
+
+      
     }
 }

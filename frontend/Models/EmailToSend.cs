@@ -29,19 +29,10 @@ public class PrepareEmailRequest
     public List<string>? BccRecipients { get; set; }
 }
 
-public interface IPartnerEmailSender
+public class EmailSendResult
 {
-    Task<List<EmailToSend>> PrepareCompleteEmailsAsync(
-        string partnerEmailFilePath,
-        string generatedFilesFolderPath,
-        string? smtpFromEmail,
-        string? smtpHost,
-        int? smtpPort,
-        string? fromDisplayName,
-        List<string>? ccRecipients,
-        List<string>? bccRecipients,
-        CancellationToken cancellationToken);
-
-    Task SendPreparedEmailsAsync(List<EmailToSend> emails, CancellationToken cancellationToken);
+    public string To { get; set; } = string.Empty;
+    public bool Success { get; set; }
+    public string? ErrorMessage { get; set; }
 }
 

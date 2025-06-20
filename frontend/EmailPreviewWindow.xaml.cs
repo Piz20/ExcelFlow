@@ -230,15 +230,7 @@ namespace ExcelFlow
 
             _cts = new CancellationTokenSource();
 
-            // Réinitialisation des statuts
-            foreach (var vm in toSend)
-            {
-                vm.IsSending = true;
-                vm.IsSuccess = false;
-                vm.IsFailure = false;
-            }
-
-            // Blocage de l'UI
+            // Désactiver UI au début
             EmailsDataGrid.IsEnabled = false;
             SelectAllCheckBox.IsEnabled = false;
             SendSelectedButton.IsEnabled = false;
@@ -246,40 +238,62 @@ namespace ExcelFlow
 
             try
             {
-                // Appel de ton vrai service d'envoi
-                var emailsToSend = toSend.Select(vm => vm.Email).ToList();
-                string result = await _sendEmailService.SendPreparedEmailsAsync(emailsToSend, _cts.Token);
-
-                // Marquer tous les envois comme réussis si pas d'exception
                 foreach (var vm in toSend)
                 {
-                    vm.IsSending = false;
-                    vm.IsSuccess = true;
+                    vm.IsSending = true;
+                    vm.IsSuccess = false;
                     vm.IsFailure = false;
+
+                    try
+                    {
+                        var singleEmailList = new List<EmailToSend> { vm.Email };
+                        var results = await _sendEmailService.SendPreparedEmailsAsync(singleEmailList, _cts.Token);
+
+                        var result = results.FirstOrDefault();
+
+                        if (result != null && result.Success)
+                        {
+                            vm.IsSuccess = true;
+                            vm.IsFailure = false;
+
+                            // Logging dans la console
+                            Console.WriteLine($"✔ Email envoyé à {result.To}");
+                        }
+                        else
+                        {
+                            vm.IsSuccess = false;
+                            vm.IsFailure = true;
+
+                            // Logging dans la console avec erreur
+                            Console.WriteLine($"✘ Échec de l'envoi à {result?.To ?? "inconnu"} : {result?.ErrorMessage ?? "Erreur inconnue"}");
+                        }
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        vm.IsSending = false;
+                        vm.IsSuccess = false;
+                        vm.IsFailure = false;
+                        Console.WriteLine("⏹️ Envoi annulé par l'utilisateur.");
+                        throw;
+                    }
+                    catch (Exception ex)
+                    {
+                        vm.IsSuccess = false;
+                        vm.IsFailure = true;
+                        Console.WriteLine($"✘ Exception lors de l'envoi : {ex.Message}");
+                    }
+                    finally
+                    {
+                        vm.IsSending = false;
+                    }
+
                 }
 
-                WpfMsgBox.Show(result, "Résultat", MessageBoxButton.OK, MessageBoxImage.Information);
+                WpfMsgBox.Show("Envoi terminé.", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (OperationCanceledException)
             {
                 WpfMsgBox.Show("L'envoi a été annulé.", "Annulé", MessageBoxButton.OK, MessageBoxImage.Information);
-                foreach (var vm in toSend)
-                {
-                    vm.IsSending = false;
-                    vm.IsSuccess = false;
-                    vm.IsFailure = false;
-                }
-            }
-            catch (Exception ex)
-            {
-                foreach (var vm in toSend)
-                {
-                    vm.IsSending = false;
-                    vm.IsSuccess = false;
-                    vm.IsFailure = true;
-                }
-
-                WpfMsgBox.Show($"Une erreur est survenue : {ex.Message}", "Erreur", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
@@ -288,7 +302,9 @@ namespace ExcelFlow
 
                 EmailsDataGrid.IsEnabled = true;
                 SelectAllCheckBox.IsEnabled = true;
+                SendSelectedButton.IsEnabled = true;
                 StopButton.IsEnabled = false;
+
                 UpdateSelectedEmailsCount();
             }
         }
