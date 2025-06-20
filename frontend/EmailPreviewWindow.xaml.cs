@@ -179,6 +179,13 @@ namespace ExcelFlow
             UpdateSelectedEmailsCount();
 
 
+
+            // Initialisation des visibilités des éléments de progression
+            ProgressBar.Visibility = Visibility.Collapsed;
+            ProgressTextBlock.Visibility = Visibility.Collapsed;
+            TxtLogs.Text = string.Empty;
+
+
             // Configuration des gestionnaires SignalR
             _hubConnection.On<string>("ReceiveMessage", message =>
             {
@@ -251,7 +258,7 @@ namespace ExcelFlow
         }
 
 
-    private async void EmailPreviewWindow_Loaded(object sender, RoutedEventArgs e)
+        private async void EmailPreviewWindow_Loaded(object sender, RoutedEventArgs e)
         {
             await StartSignalRConnection();
         }
@@ -396,7 +403,15 @@ namespace ExcelFlow
                     {
                         vm.IsSending = false;
                     }
+                }
 
+                // Ici, décocher tous les emails envoyés avec succès
+                foreach (var vm in toSend)
+                {
+                    if (vm.IsSuccess)
+                    {
+                        vm.IsSelected = false;
+                    }
                 }
 
                 WpfMsgBox.Show("Envoi terminé.", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -418,6 +433,7 @@ namespace ExcelFlow
                 UpdateSelectedEmailsCount();
             }
         }
+
 
         private void Window_PreviewMouseDown(object sender, MouseButtonEventArgs e)
         {

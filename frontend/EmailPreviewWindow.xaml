@@ -34,9 +34,9 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>   <!-- Ligne 0: Sélection -->
             <RowDefinition Height="*"/>      <!-- Ligne 1: DataGrid scrollable -->
-            <RowDefinition Height="Auto"/>   <!-- Ligne 2: Barre de progression -->
-            <RowDefinition Height="Auto"/>   <!-- Ligne 3: Zone logs -->
-            <RowDefinition Height="Auto"/>   <!-- Ligne 4: Boutons -->
+            <!--<RowDefinition Height="Auto"/> Ligne 2 supprimée car fusionnée -->
+            <RowDefinition Height="Auto"/>   <!-- Ligne 2: Zone logs -->
+            <RowDefinition Height="Auto"/>   <!-- Ligne 3: Barre de progression + Boutons -->
         </Grid.RowDefinitions>
 
         <!-- Zone de sélection -->
@@ -125,24 +125,8 @@
             </DataGrid>
         </ScrollViewer>
 
-        <!-- Barre de progression -->
-        <StackPanel Orientation="Horizontal" Grid.Row="2" Margin="0,10,0,10" VerticalAlignment="Center">
-            <ProgressBar x:Name="ProgressBar"
-                         Height="20"
-                         Width="300"
-                         Visibility="Collapsed"
-                         Minimum="0"
-                         Maximum="100"
-                         Margin="0,0,10,0"/>
-            <TextBlock x:Name="ProgressTextBlock"
-                       FontSize="14"
-                       FontWeight="Bold"
-                       VerticalAlignment="Center"
-                       Visibility="Collapsed"/>
-        </StackPanel>
-
         <!-- Zone de logs -->
-        <Border Grid.Row="3"
+        <Border Grid.Row="2"
                 BorderBrush="#DDD"
                 BorderThickness="1"
                 CornerRadius="5"
@@ -177,25 +161,54 @@
             </Grid>
         </Border>
 
-        <!-- Boutons -->
-        <StackPanel Grid.Row="4"
-                    Orientation="Horizontal"
-                    HorizontalAlignment="Right"
-                    Margin="0,10,0,0">
-            <Button x:Name="SendSelectedButton"
-                    Content="Envoyer les emails sélectionnés"
-                    Click="SendSelectedButton_Click"
-                    Style="{StaticResource ButtonStyle}"
-                    Background="#FFFFFF"
-                    Foreground="#000000"/>
-            <Button x:Name="StopButton"
-                    Content="Stop"
-                    Click="StopButton_Click"
-                    Style="{StaticResource ButtonStyle}"
-                    Background="#FF9999"
-                    Foreground="White"
-                    IsEnabled="False"/>
-        </StackPanel>
+        <!-- Barre de progression + Boutons sur la même ligne -->
+        <Grid Grid.Row="3" Margin="0,10,0,0" VerticalAlignment="Center">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/> <!-- ProgressBar + texte -->
+                <ColumnDefinition Width="*"/>    <!-- Espace flexible -->
+                <ColumnDefinition Width="Auto"/> <!-- Boutons -->
+            </Grid.ColumnDefinitions>
+
+            <!-- Barre de progression + texte -->
+            <StackPanel Orientation="Horizontal" Grid.Column="0" VerticalAlignment="Center">
+                <ProgressBar x:Name="ProgressBar"
+                             Height="20"
+                             Width="300"
+                             Visibility="Collapsed"
+                             Minimum="0"
+                             Maximum="100"
+                             Margin="0,0,10,0"/>
+                <TextBlock x:Name="ProgressTextBlock"
+                           FontSize="14"
+                           FontWeight="Bold"
+                           VerticalAlignment="Center"
+                           Visibility="Collapsed"/>
+            </StackPanel>
+
+            <!-- Espace flexible -->
+            <StackPanel Grid.Column="1"/>
+
+            <!-- Boutons -->
+            <StackPanel Grid.Column="2"
+                        Orientation="Horizontal"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Center">
+                <Button x:Name="SendSelectedButton"
+                        Content="Envoyer les emails sélectionnés"
+                        Click="SendSelectedButton_Click"
+                        Style="{StaticResource ButtonStyle}"
+                        Background="#FFFFFF"
+                        Foreground="#000000"/>
+                <Button x:Name="StopButton"
+                        Content="Stop"
+                        Click="StopButton_Click"
+                        Style="{StaticResource ButtonStyle}"
+                        Background="#FF9999"
+                        Foreground="White"
+                        IsEnabled="False"
+                        Margin="10,0,0,0"/>
+            </StackPanel>
+        </Grid>
 
     </Grid>
 </Window>

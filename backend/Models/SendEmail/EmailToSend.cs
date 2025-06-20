@@ -53,16 +53,7 @@ public interface IPartnerEmailSender
     Task<List<EmailSendResult>> SendPreparedEmailsAsync(List<EmailToSend> emails, CancellationToken cancellationToken);
 
 
-    Task SendEmailsToPartnersWithAttachments(
-            string partnerEmailFilePath,
-            string generatedFilesFolderPath,
-            string smtpFromEmail,
-            string smtpHost,
-            int smtpPort,
-            string fromDisplayName,
-            List<string> ccRecipients,
-            List<string> bccRecipients,
-            CancellationToken cancellationToken);
+
 }
 
 

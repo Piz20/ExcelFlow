@@ -30,12 +30,10 @@ namespace ExcelFlow.Views
 
         private AppConfig _appConfig;
 
-
         public string SmtpHost { get; set; } = string.Empty;
         public int SmtpPort { get; set; }
         public string SmtpFromEmail { get; set; } = string.Empty;
 
-        // Implémentation de l'interface IClosableView
         public bool IsOperationInProgress => _cts != null && !_cts.IsCancellationRequested;
 
         public (string Message, string Title, MessageBoxImage Icon) GetClosingConfirmation()
@@ -46,7 +44,6 @@ namespace ExcelFlow.Views
                 MessageBoxImage.Warning
             );
         }
-
 
         public SendEmailView(AppConfig config)
         {
@@ -70,11 +67,8 @@ namespace ExcelFlow.Views
             SmtpPort = _appConfig.Smtp.SmtpPort ?? 0;
             SmtpFromEmail = _appConfig.Smtp.SmtpFromEmail ?? "";
 
-
-            // Initialisation des visibilités des éléments de progression
             ProgressBar.Visibility = Visibility.Collapsed;
             ProgressTextBlock.Visibility = Visibility.Collapsed;
-            ProgressMessageTextBlock.Visibility = Visibility.Collapsed;
             TxtLogs.Text = string.Empty;
 
             // Configuration des gestionnaires SignalR
@@ -141,8 +135,6 @@ namespace ExcelFlow.Views
                 Dispatcher.Invoke(() => AppendLog($"❌ Connexion au hub fermée : {ex?.Message}"));
                 return Task.CompletedTask;
             };
-
-
 
             this.Loaded += SendEmailView_Loaded;
             SetUiEnabledState(true);
@@ -251,6 +243,16 @@ namespace ExcelFlow.Views
                 return;
             }
 
+            // Mise à jour de la config en mémoire
+            _appConfig.SendEmail.GeneratedFilesFolderPath = _generatedFilesFolderPath;
+            _appConfig.SendEmail.PartnerEmailFilePath = _partnerEmailFilePath;
+            _appConfig.SendEmail.FromDisplayName = fromDisplayName;
+            _appConfig.SendEmail.CcRecipients = ccText;
+            _appConfig.SendEmail.BccRecipients = bccText;
+
+            // Sauvegarde de la config sur disque
+            SaveAppConfig();
+
             SetUiEnabledState(false);
 
             SmtpHost = _appConfig.Smtp.SmtpHost ?? "";
@@ -281,9 +283,8 @@ namespace ExcelFlow.Views
                     return;
                 }
 
-                // 👉 Affichage dans une nouvelle fenêtre WPF personnalisée
                 var previewWindow = new EmailPreviewWindow(preparedEmails);
-                previewWindow.ShowDialog(); // ou Show() si tu veux laisser la main à l'utilisateur
+                previewWindow.ShowDialog();
             }
             catch (Exception ex)
             {
@@ -298,7 +299,6 @@ namespace ExcelFlow.Views
             }
         }
 
-
         private void CancelSendingButton_Click(object sender, RoutedEventArgs e)
         {
             if (_cts != null && !_cts.IsCancellationRequested)
@@ -312,6 +312,7 @@ namespace ExcelFlow.Views
         {
             TxtLogs.Clear();
         }
+
         private void SetUiEnabledState(bool enabled)
         {
             StartSendingButton.IsEnabled = enabled;
@@ -331,5 +332,19 @@ namespace ExcelFlow.Views
             BccRecipientsTextBox.IsEnabled = enabled;
             CancelSendingButton.IsEnabled = !enabled;
         }
+        private void SaveAppConfig()
+        {
+            try
+            {
+                var json = JsonSerializer.Serialize(_appConfig, new JsonSerializerOptions { WriteIndented = true });
+                File.WriteAllText("appconfigs.json", json); // <-- nom du fichier corrigé ici
+                AppendLog("✅ Configuration sauvegardée avec succès dans appconfigs.json.");
+            }
+            catch (Exception ex)
+            {
+                AppendLog($"❌ Erreur lors de la sauvegarde de la configuration : {ex.Message}");
+            }
+        }
+
     }
 }
