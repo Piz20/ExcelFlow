@@ -7,7 +7,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
+
 using ExcelFlow.Services;
 using ExcelFlow.Models;
 using WpfMsgBox = System.Windows.MessageBox;
@@ -308,6 +310,29 @@ namespace ExcelFlow
                 UpdateSelectedEmailsCount();
             }
         }
+
+        private void Window_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+        {
+            var source = e.OriginalSource as DependencyObject;
+
+            // Remonte l'arbre visuel jusqu'à trouver un TextBox, ComboBox, etc.
+            while (source != null && !(source is System.Windows.Controls.TextBox) &&
+                   !(source is System.Windows.Controls.ComboBox) &&
+                   !(source is PasswordBox)) // Ajoute d'autres types si nécessaire
+            {
+                source = VisualTreeHelper.GetParent(source);
+            }
+
+            // Si aucun contrôle interactif n'a été cliqué, retirer le focus
+            if (source == null)
+            {
+                Keyboard.ClearFocus();
+
+                // Définir un nouvel élément focalisable invisible pour y mettre le focus
+                FocusManager.SetFocusedElement(this, this);
+            }
+        }
+
 
         private void StopButton_Click(object sender, EventArgs e)
         {

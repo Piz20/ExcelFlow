@@ -4,34 +4,49 @@
         Title="Aperçu des Emails Préparés"
         Height="650"
         Width="1000"
-        WindowStartupLocation="CenterScreen">
+        WindowStartupLocation="CenterScreen"
+        PreviewMouseDown="Window_PreviewMouseDown">
 
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
         <!-- Style pour les boutons avec taille réduite -->
-        <Style x:Key="ButtonStyle" TargetType="Button">
-            <Setter Property="Margin" Value="5,0"/>
-            <Setter Property="Padding" Value="10,5"/>
-            <Setter Property="MinWidth" Value="150"/>
-            <Setter Property="Height" Value="30"/>
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="BorderBrush" Value="#333333"/>
+        <Style x:Key="ButtonStyle"
+                TargetType="Button">
+            <Setter Property="Margin"
+                    Value="5,0"/>
+            <Setter Property="Padding"
+                    Value="10,5"/>
+            <Setter Property="MinWidth"
+                    Value="150"/>
+            <Setter Property="Height"
+                    Value="30"/>
+            <Setter Property="FontSize"
+                    Value="13"/>
+            <Setter Property="FontWeight"
+                    Value="SemiBold"/>
+            <Setter Property="BorderThickness"
+                    Value="1"/>
+            <Setter Property="BorderBrush"
+                    Value="#333333"/>
         </Style>
         <!-- Style pour désactiver la surbrillance des lignes sélectionnées -->
         <Style TargetType="DataGridRow">
-            <Setter Property="IsSelected" Value="False"/>
+            <Setter Property="IsSelected"
+                    Value="False"/>
             <Style.Triggers>
-                <Trigger Property="IsSelected" Value="True">
-                    <Setter Property="Background" Value="Transparent"/>
-                    <Setter Property="BorderBrush" Value="Transparent"/>
+                <Trigger Property="IsSelected"
+                        Value="True">
+                    <Setter Property="Background"
+                            Value="Transparent"/>
+                    <Setter Property="BorderBrush"
+                            Value="Transparent"/>
                 </Trigger>
             </Style.Triggers>
         </Style>
     </Window.Resources>
 
-    <DockPanel Margin="10" LastChildFill="False">
+    <DockPanel Margin="10"
+            LastChildFill="False">
 
         <!-- Barre de sélection globale en haut -->
         <StackPanel DockPanel.Dock="Top"

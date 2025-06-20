@@ -1,23 +1,6 @@
 namespace ExcelFlow.Models
 {
-    /// <summary>
-    /// Représente les données de requête envoyées du frontend au backend pour démarrer l'envoi d'emails.
-    /// </summary>
-    public class EmailSendRequest
-    {
-        public string GeneratedFilesFolderPath { get; set; } = string.Empty;
-        public string PartnerEmailFilePath { get; set; } = string.Empty;
-        public string? FromDisplayName { get; set; } = "WAFACASH CENTRAL AFRICA LIMITED";
-
-        public List<string> CcRecipients { get; set; } = new List<string>();
-        public List<string> BccRecipients { get; set; } = new List<string>();
-
-        // Paramètres SMTP optionnels sans authentification
-        public string? SmtpHost { get; set; } = null;
-        public int? SmtpPort { get; set; } = null;
-        public string? SmtpFromEmail { get; set; } = null;
-    }
-
+  
     /// <summary>
     /// Représente les informations d'un partenaire identifié.
     /// </summary>
