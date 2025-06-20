@@ -21,10 +21,10 @@ namespace ExcelFlow.Views
             InitializeComponent();
             _appConfig = config;
 
-            // Initialiser les champs avec les valeurs existantes
-            SmtpHost = _appConfig.Smtp.SmtpHost;
-            SmtpPort = _appConfig.Smtp.SmtpPort;
-            SmtpFromEmail = _appConfig.Smtp.SmtpFromEmail;
+            SmtpHost = _appConfig.Smtp?.SmtpHost ?? string.Empty;
+            SmtpPort = _appConfig.Smtp?.SmtpPort ?? 587;
+            SmtpFromEmail = _appConfig.Smtp?.SmtpFromEmail ?? string.Empty;
+
         }
 
         public string SmtpHost

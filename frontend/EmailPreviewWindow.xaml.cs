@@ -134,9 +134,10 @@ namespace ExcelFlow
             public EmailToSendViewModel(EmailToSend email)
             {
                 Email = email;
-                _selectedPartner = PartnerNameList.FirstOrDefault();
-                _selectedAttachment = AttachmentFilePaths.FirstOrDefault();
-                _selectedRecipient = ToRecipients.FirstOrDefault();
+                _selectedPartner = PartnerNameList.FirstOrDefault() ?? string.Empty;
+                _selectedAttachment = AttachmentFilePaths.FirstOrDefault() ?? string.Empty;
+                _selectedRecipient = ToRecipients.FirstOrDefault() ?? string.Empty;
+
             }
 
             public event PropertyChangedEventHandler? PropertyChanged;
@@ -225,6 +226,8 @@ namespace ExcelFlow
             };
 
             this.Loaded += EmailPreviewWindow_Loaded;
+            this.Closing += EmailPreviewWindow_Closing;
+
         }
 
         private async void EmailPreviewWindow_Loaded(object sender, RoutedEventArgs e)
@@ -417,6 +420,34 @@ namespace ExcelFlow
             {
                 Keyboard.ClearFocus();
                 FocusManager.SetFocusedElement(this, this);
+            }
+        }
+
+
+        private void EmailPreviewWindow_Closing(object? sender, CancelEventArgs e)
+        {
+            bool sendingInProgress = _emailViewModels.Any(vm => vm.IsSending);
+
+            if (sendingInProgress)
+            {
+                WpfMsgBox.Show("Veuillez attendre que tous les envois d’emails soient terminés avant de fermer la fenêtre.",
+                    "Envoi en cours",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Exclamation);
+                e.Cancel = true;
+                return;
+            }
+
+            var result = WpfMsgBox.Show(
+                " URGENT : Êtes-vous sûr d’avoir envoyé tous les mails dont vous avez besoin ?",
+                "Confirmation de fermeture",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning
+            );
+
+            if (result != MessageBoxResult.Yes)
+            {
+                e.Cancel = true;
             }
         }
 
