@@ -17,7 +17,7 @@ using ExcelFlow.Models; // Pour PartnerInfo, SentEmailSummary, EmailData, et Pro
 
 namespace ExcelFlow.Services;
 
-public class PartnerEmailSender
+public class PartnerEmailSender : IPartnerEmailSender
 {
     private readonly SendEmail _sendEmailService;
     private readonly IHubContext<PartnerFileHub> _hubContext;
@@ -117,192 +117,283 @@ public class PartnerEmailSender
     }
 
 
-public async Task SendEmailsToPartnersWithAttachments(
-    string partnerEmailFilePath,
-    string generatedFilesFolderPath,
-    string? smtpFromEmail = null,
-    string? smtpHost = null,
-    int? smtpPort = null,
-    string? fromDisplayName = null ,
-    List<string>? ccRecipients = null,
-    List<string>? bccRecipients = null,
-    CancellationToken cancellationToken = default)
-{
-    await LogAndSend("Démarrage du processus d'envoi d'emails basé sur les fichiers générés...", cancellationToken);
-    await SendProgressToFrontend(0, 0, "Démarrage de l'opération.", cancellationToken);
-
-    // Lecture partenaires
-    List<PartnerInfo> partners;
-    try
+    public async Task SendEmailsToPartnersWithAttachments(
+            string partnerEmailFilePath,
+            string generatedFilesFolderPath,
+            string smtpFromEmail,
+            string smtpHost,
+            int smtpPort,
+            string fromDisplayName,
+            List<string> ccRecipients,
+            List<string> bccRecipients,
+            CancellationToken cancellationToken)
     {
-        partners = await Task.Run(() => _partnerExcelReader.ReadPartnersFromExcel(partnerEmailFilePath, cancellationToken), cancellationToken);
-        await LogAndSend($"Lecture terminée. {partners.Count} partenaires trouvés.", cancellationToken);
-        await SendProgressToFrontend(0, 0, $"Lecture des partenaires terminée. {partners.Count} partenaires trouvés.", cancellationToken);
+        await LogAndSend("Démarrage du processus d'envoi d'emails basé sur les fichiers générés...", cancellationToken);
+        await SendProgressToFrontend(0, 0, "Démarrage de l'opération.", cancellationToken);
 
-        if (!partners.Any())
+        // Lecture partenaires
+        List<PartnerInfo> partners;
+        try
         {
-            await LogAndSend("Aucun partenaire avec adresse email valide trouvé. Arrêt de l'opération.", cancellationToken);
-            await SendProgressToFrontend(0, 0, "Aucun partenaire trouvé. Arrêt.", cancellationToken);
+            partners = await Task.Run(() => _partnerExcelReader.ReadPartnersFromExcel(partnerEmailFilePath, cancellationToken), cancellationToken);
+            await LogAndSend($"Lecture terminée. {partners.Count} partenaires trouvés.", cancellationToken);
+            await SendProgressToFrontend(0, 0, $"Lecture des partenaires terminée. {partners.Count} partenaires trouvés.", cancellationToken);
+
+            if (!partners.Any())
+            {
+                await LogAndSend("Aucun partenaire avec adresse email valide trouvé. Arrêt de l'opération.", cancellationToken);
+                await SendProgressToFrontend(0, 0, "Aucun partenaire trouvé. Arrêt.", cancellationToken);
+                return;
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            await LogAndSendError("Lecture du fichier Excel annulée.", cancellationToken);
+            await SendProgressToFrontend(0, 0, "Opération annulée pendant la lecture des partenaires.", cancellationToken);
             return;
         }
-    }
-    catch (OperationCanceledException)
-    {
-        await LogAndSendError("Lecture du fichier Excel annulée.", cancellationToken);
-        await SendProgressToFrontend(0, 0, "Opération annulée pendant la lecture des partenaires.", cancellationToken);
-        return;
-    }
-    catch (Exception ex)
-    {
-        await LogAndSendError($"Erreur lecture fichier Excel : {ex.Message}", cancellationToken);
-        await SendProgressToFrontend(0, 0, $"Erreur lors de la lecture des partenaires : {ex.Message}", cancellationToken);
-        return;
-    }
-
-    if (!Directory.Exists(generatedFilesFolderPath))
-    {
-        await LogAndSendError($"Dossier des fichiers générés introuvable : {generatedFilesFolderPath}", cancellationToken);
-        await SendProgressToFrontend(0, 0, "Erreur : dossier des fichiers générés introuvable.", cancellationToken);
-        return;
-    }
-
-    var allGeneratedFiles = Directory.GetFiles(generatedFilesFolderPath).ToList();
-    if (!allGeneratedFiles.Any())
-    {
-        await LogAndSend("Aucun fichier généré trouvé. Aucun email ne sera envoyé.", cancellationToken);
-        await SendProgressToFrontend(0, 0, "Processus terminé: Aucun fichier à envoyer.", cancellationToken);
-        return;
-    }
-
-    await LogAndSend($"Traitement de {allGeneratedFiles.Count} fichiers.", cancellationToken);
-    await SendTotalFilesCountToFrontend(allGeneratedFiles.Count, cancellationToken);
-
-    var processedFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-    var sentEmailSummaries = new List<SentEmailSummary>();
-
-    int filesProcessedCount = 0;
-    int emailsSentSuccessfully = 0;
-
-    foreach (var filePath in allGeneratedFiles)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-
-        string fileName = Path.GetFileName(filePath);
-
-        if (processedFiles.Contains(filePath))
+        catch (Exception ex)
         {
-            filesProcessedCount++;
-            await LogAndSend($"[Fichier '{fileName}'] Déjà traité, ignoré.", cancellationToken);
-            await SendProgressToFrontend(filesProcessedCount, allGeneratedFiles.Count, $"'{fileName}' déjà traité.", cancellationToken);
-            continue;
+            await LogAndSendError($"Erreur lecture fichier Excel : {ex.Message}", cancellationToken);
+            await SendProgressToFrontend(0, 0, $"Erreur lors de la lecture des partenaires : {ex.Message}", cancellationToken);
+            return;
         }
 
-        filesProcessedCount++;
-
-        var emailData = await _emailDataExtractor.ExtractEmailDataFromAttachment(filePath, cancellationToken);
-        if (emailData == null)
+        if (!Directory.Exists(generatedFilesFolderPath))
         {
-            await LogAndSendError($"[Fichier '{fileName}'] Impossible d'extraire les données dynamiques. Email non envoyé.", cancellationToken);
-            await SendProgressToFrontend(filesProcessedCount, allGeneratedFiles.Count, $"'{fileName}': Extraction données échouée.", cancellationToken);
-            continue;
+            await LogAndSendError($"Dossier des fichiers générés introuvable : {generatedFilesFolderPath}", cancellationToken);
+            await SendProgressToFrontend(0, 0, "Erreur : dossier des fichiers générés introuvable.", cancellationToken);
+            return;
         }
-        var partnerNameInFile = (emailData.PartnerNameInFile ?? string.Empty).Trim();
 
-        PartnerInfo? foundPartner = null;
+        var allGeneratedFiles = Directory.GetFiles(generatedFilesFolderPath).ToList();
+        if (!allGeneratedFiles.Any())
+        {
+            await LogAndSend("Aucun fichier généré trouvé. Aucun email ne sera envoyé.", cancellationToken);
+            await SendProgressToFrontend(0, 0, "Processus terminé: Aucun fichier à envoyer.", cancellationToken);
+            return;
+        }
 
-        foreach (var partner in partners)
+        await LogAndSend($"Traitement de {allGeneratedFiles.Count} fichiers.", cancellationToken);
+        await SendTotalFilesCountToFrontend(allGeneratedFiles.Count, cancellationToken);
+
+        var processedFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var sentEmailSummaries = new List<SentEmailSummary>();
+
+        int filesProcessedCount = 0;
+        int emailsSentSuccessfully = 0;
+
+        foreach (var filePath in allGeneratedFiles)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            if (partner.PartnerName.Trim().Equals(partnerNameInFile, StringComparison.OrdinalIgnoreCase))
+            string fileName = Path.GetFileName(filePath);
+
+            if (processedFiles.Contains(filePath))
             {
-                foundPartner = partner;
-                break;
+                filesProcessedCount++;
+                await LogAndSend($"[Fichier '{fileName}'] Déjà traité, ignoré.", cancellationToken);
+                await SendProgressToFrontend(filesProcessedCount, allGeneratedFiles.Count, $"'{fileName}' déjà traité.", cancellationToken);
+                continue;
+            }
+
+            filesProcessedCount++;
+
+            var emailData = await _emailDataExtractor.ExtractEmailDataFromAttachment(filePath, cancellationToken);
+            if (emailData == null)
+            {
+                await LogAndSendError($"[Fichier '{fileName}'] Impossible d'extraire les données dynamiques. Email non envoyé.", cancellationToken);
+                await SendProgressToFrontend(filesProcessedCount, allGeneratedFiles.Count, $"'{fileName}': Extraction données échouée.", cancellationToken);
+                continue;
+            }
+            var partnerNameInFile = (emailData.PartnerNameInFile ?? string.Empty).Trim();
+
+            PartnerInfo? foundPartner = null;
+
+            foreach (var partner in partners)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                if (partner.PartnerName.Trim().Equals(partnerNameInFile, StringComparison.OrdinalIgnoreCase))
+                {
+                    foundPartner = partner;
+                    break;
+                }
+            }
+
+            if (foundPartner != null && foundPartner.Emails.Any())
+            {
+                await LogAndSend($"[Fichier '{fileName}'] Partenaire '{foundPartner.PartnerName}' trouvé.", cancellationToken);
+
+                string finalSubject = _emailContentBuilder.BuildSubject(emailData);
+                string finalBody = _emailContentBuilder.BuildBody(emailData);
+
+                bool sent = await _sendEmailService.SendEmailAsync(
+                    subject: finalSubject,
+                    body: finalBody,
+                    toRecipients: foundPartner.Emails,
+                    ccRecipients: ccRecipients,
+                    bccRecipients: bccRecipients,
+                    fromDisplayName: fromDisplayName,
+                    attachmentFilePaths: new List<string> { filePath },
+                    smtpHost: smtpHost,
+                    smtpPort: smtpPort,
+                    smtpFromEmail: smtpFromEmail,
+                    cancellationToken: cancellationToken
+                );
+
+                if (sent)
+                {
+                    emailsSentSuccessfully++;
+                    processedFiles.Add(filePath);
+
+                    var summary = new SentEmailSummary
+                    {
+                        FileName = fileName,
+                        PartnerName = foundPartner.PartnerName,
+                        RecipientEmails = foundPartner.Emails.ToList(),
+                        CcRecipientsSent = ccRecipients?.ToList() ?? new List<string>(),
+                        BccRecipientsSent = bccRecipients?.ToList() ?? new List<string>()
+                    };
+                    sentEmailSummaries.Add(summary);
+
+                    await SendSentEmailSummaryToFrontend(summary, cancellationToken);
+                    await SendProgressToFrontend(filesProcessedCount, allGeneratedFiles.Count, $"'{fileName}': Email envoyé avec succès.", cancellationToken);
+                }
+                else
+                {
+                    await LogAndSendError($"[Fichier '{fileName}'] Échec de l'envoi à {foundPartner.PartnerName}.", cancellationToken);
+                    await SendProgressToFrontend(filesProcessedCount, allGeneratedFiles.Count, $"'{fileName}': Échec de l'envoi de l'email.", cancellationToken);
+                }
+            }
+            else
+            {
+                if (foundPartner != null && !foundPartner.Emails.Any())
+                {
+                    await LogAndSendError($"[Fichier '{fileName}'] Partenaire '{foundPartner.PartnerName}' sans email valide. Fichier ignoré.", cancellationToken);
+                    await SendProgressToFrontend(filesProcessedCount, allGeneratedFiles.Count, $"'{fileName}': Partenaire sans email valide.", cancellationToken);
+                }
+                else
+                {
+                    await LogAndSend($"[Fichier '{fileName}'] Aucun partenaire correspondant trouvé. Fichier ignoré.", cancellationToken);
+                    await SendProgressToFrontend(filesProcessedCount, allGeneratedFiles.Count, $"'{fileName}': Aucun partenaire correspondant.", cancellationToken);
+                }
             }
         }
 
-        if (foundPartner != null && foundPartner.Emails.Any())
-        {
-            await LogAndSend($"[Fichier '{fileName}'] Partenaire '{foundPartner.PartnerName}' trouvé.", cancellationToken);
+        await LogAndSend($"Processus terminé. Total d'emails envoyés : {emailsSentSuccessfully}.", cancellationToken);
+        await SendProgressToFrontend(allGeneratedFiles.Count, allGeneratedFiles.Count, $"Processus terminé. {emailsSentSuccessfully} emails envoyés.", cancellationToken);
 
-            string finalSubject = _emailContentBuilder.BuildSubject(emailData);
-            string finalBody = _emailContentBuilder.BuildBody(emailData);
+        if (sentEmailSummaries.Any())
+        {
+            await LogAndSend("--- RÉCAPITULATIF FINAL ---", cancellationToken);
+            await LogAndSend($"Total d'emails envoyés avec succès : {sentEmailSummaries.Count}", cancellationToken);
+            foreach (var summary in sentEmailSummaries)
+            {
+                await LogAndSend($"- '{summary.FileName}' envoyé à '{summary.PartnerName}' (To: {string.Join(", ", summary.RecipientEmails)})", cancellationToken);
+                if (summary.CcRecipientsSent.Any())
+                    await LogAndSend($"  Cc: {string.Join(", ", summary.CcRecipientsSent)}", cancellationToken);
+                if (summary.BccRecipientsSent.Any())
+                    await LogAndSend($"  Bcc: {string.Join(", ", summary.BccRecipientsSent)} (Non visible par To/Cc)", cancellationToken);
+            }
+            await LogAndSend("---------------------------------------", cancellationToken);
+        }
+        else
+        {
+            await LogAndSend("Aucun email envoyé durant ce processus.", cancellationToken);
+        }
+    }
+
+
+
+
+
+
+    public async Task<List<EmailToSend>> PrepareCompleteEmailsAsync(
+        string partnerEmailFilePath,
+        string generatedFilesFolderPath,
+        string? smtpFromEmail,
+        string? smtpHost,
+        int? smtpPort,
+        string? fromDisplayName,
+        List<string>? ccRecipients,
+        List<string>? bccRecipients,
+        CancellationToken cancellationToken)
+    {
+        var partners = await Task.Run(() =>
+            _partnerExcelReader.ReadPartnersFromExcel(partnerEmailFilePath, cancellationToken), cancellationToken);
+
+        var allGeneratedFiles = Directory.GetFiles(generatedFilesFolderPath).ToList();
+        var preparedEmails = new List<EmailToSend>();
+
+        foreach (var filePath in allGeneratedFiles)
+        {
+            var emailData = await _emailDataExtractor.ExtractEmailDataFromAttachment(filePath, cancellationToken);
+            if (emailData == null)
+            {
+                continue;
+            }
+            var partner = partners.FirstOrDefault(p =>
+                p.PartnerName.Trim().Equals(emailData.PartnerNameInFile?.Trim(), StringComparison.OrdinalIgnoreCase));
+
+            if (partner != null && partner.Emails.Any())
+            {
+                preparedEmails.Add(new EmailToSend
+                {
+                    Subject = _emailContentBuilder.BuildSubject(emailData),
+                    Body = _emailContentBuilder.BuildBody(emailData),
+                    ToRecipients = partner.Emails,
+                    CcRecipients = ccRecipients ?? new(),
+                    BccRecipients = bccRecipients ?? new(),
+                    FromDisplayName = fromDisplayName ?? string.Empty,
+                    AttachmentFilePaths = new List<string> { filePath },
+                    SmtpHost = smtpHost,
+                    SmtpPort = smtpPort,
+                    SmtpFromEmail = smtpFromEmail,
+                    PartnerName = partner.PartnerName // Ajout ici
+                });
+
+            }
+        }
+
+        return preparedEmails;
+    }
+
+
+    public async Task SendPreparedEmailsAsync(
+        List<EmailToSend> emails,
+        CancellationToken cancellationToken)
+    {
+        foreach (var email in emails)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
 
             bool sent = await _sendEmailService.SendEmailAsync(
-                subject: finalSubject,
-                body: finalBody,
-                toRecipients: foundPartner.Emails,
-                ccRecipients: ccRecipients,
-                bccRecipients: bccRecipients,
-                fromDisplayName: fromDisplayName,
-                attachmentFilePaths: new List<string> { filePath },
-                smtpHost: smtpHost,
-                smtpPort: smtpPort,
-                smtpFromEmail: smtpFromEmail ,
+                subject: email.Subject,
+                body: email.Body,
+                toRecipients: email.ToRecipients,
+                ccRecipients: email.CcRecipients,
+                bccRecipients: email.BccRecipients,
+                fromDisplayName: email.FromDisplayName,
+                attachmentFilePaths: email.AttachmentFilePaths,
+                smtpHost: email.SmtpHost,
+                smtpPort: email.SmtpPort,
+                smtpFromEmail: email.SmtpFromEmail,
                 cancellationToken: cancellationToken
             );
 
             if (sent)
             {
-                emailsSentSuccessfully++;
-                processedFiles.Add(filePath);
-
-                var summary = new SentEmailSummary
-                {
-                    FileName = fileName,
-                    PartnerName = foundPartner.PartnerName,
-                    RecipientEmails = foundPartner.Emails.ToList(),
-                    CcRecipientsSent = ccRecipients?.ToList() ?? new List<string>(),
-                    BccRecipientsSent = bccRecipients?.ToList() ?? new List<string>()
-                };
-                sentEmailSummaries.Add(summary);
-
-                await SendSentEmailSummaryToFrontend(summary, cancellationToken);
-                await SendProgressToFrontend(filesProcessedCount, allGeneratedFiles.Count, $"'{fileName}': Email envoyé avec succès.", cancellationToken);
+                // Logging ou notification de succès ici si nécessaire
+                await LogAndSend($"Email envoyé à : {string.Join(", ", email.ToRecipients)}", cancellationToken);
             }
             else
             {
-                await LogAndSendError($"[Fichier '{fileName}'] Échec de l'envoi à {foundPartner.PartnerName}.", cancellationToken);
-                await SendProgressToFrontend(filesProcessedCount, allGeneratedFiles.Count, $"'{fileName}': Échec de l'envoi de l'email.", cancellationToken);
-            }
-        }
-        else
-        {
-            if (foundPartner != null && !foundPartner.Emails.Any())
-            {
-                await LogAndSendError($"[Fichier '{fileName}'] Partenaire '{foundPartner.PartnerName}' sans email valide. Fichier ignoré.", cancellationToken);
-                await SendProgressToFrontend(filesProcessedCount, allGeneratedFiles.Count, $"'{fileName}': Partenaire sans email valide.", cancellationToken);
-            }
-            else
-            {
-                await LogAndSend($"[Fichier '{fileName}'] Aucun partenaire correspondant trouvé. Fichier ignoré.", cancellationToken);
-                await SendProgressToFrontend(filesProcessedCount, allGeneratedFiles.Count, $"'{fileName}': Aucun partenaire correspondant.", cancellationToken);
+                // Logging ou notification d’échec
+                await LogAndSendError($"Échec de l'envoi de l'email à : {string.Join(", ", email.ToRecipients)}", cancellationToken);
             }
         }
     }
-
-    await LogAndSend($"Processus terminé. Total d'emails envoyés : {emailsSentSuccessfully}.", cancellationToken);
-    await SendProgressToFrontend(allGeneratedFiles.Count, allGeneratedFiles.Count, $"Processus terminé. {emailsSentSuccessfully} emails envoyés.", cancellationToken);
-
-    if (sentEmailSummaries.Any())
-    {
-        await LogAndSend("--- RÉCAPITULATIF FINAL ---", cancellationToken);
-        await LogAndSend($"Total d'emails envoyés avec succès : {sentEmailSummaries.Count}", cancellationToken);
-        foreach (var summary in sentEmailSummaries)
-        {
-            await LogAndSend($"- '{summary.FileName}' envoyé à '{summary.PartnerName}' (To: {string.Join(", ", summary.RecipientEmails)})", cancellationToken);
-            if (summary.CcRecipientsSent.Any())
-                await LogAndSend($"  Cc: {string.Join(", ", summary.CcRecipientsSent)}", cancellationToken);
-            if (summary.BccRecipientsSent.Any())
-                await LogAndSend($"  Bcc: {string.Join(", ", summary.BccRecipientsSent)} (Non visible par To/Cc)", cancellationToken);
-        }
-        await LogAndSend("---------------------------------------", cancellationToken);
-    }
-    else
-    {
-        await LogAndSend("Aucun email envoyé durant ce processus.", cancellationToken);
-    }
-}
 
 
 }

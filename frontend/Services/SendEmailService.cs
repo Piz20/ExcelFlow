@@ -1,68 +1,95 @@
+using System;
+using System.Collections.Generic;
 using System.Net.Http;
+using System.Net.Http.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Text.Json; // Used for JsonSerializer
-using System.Net.Http.Json; // Used for PostAsJsonAsync
-
-// Make sure ExcelFlow.Models is a shared project referenced by your WPF app
-// or ensure these DTOs are defined within your WPF project if not shared.
 using ExcelFlow.Models;
-
-namespace ExcelFlow.Services // Correction du namespace
+using System.Text.Json;
+namespace ExcelFlow.Services
 {
     public class SendEmailService
     {
         private readonly HttpClient _httpClient;
-        private readonly string _baseUrl;
 
-        /// <summary>
-        /// Initialise une nouvelle instance du service d'envoi d'emails.
-        /// </summary>
-        /// <param name="baseUrl">L'URL de base de votre API backend ASP.NET Core (ex: "https://localhost:7274").</param>
         public SendEmailService(string baseUrl)
         {
-            _baseUrl = baseUrl;
-            _httpClient = new HttpClient();
-            // Vous pouvez configurer d'autres propriétés HttpClient ici si nécessaire,
-            // comme BaseAddress pour simplifier les appels futurs.
-            // _httpClient.BaseAddress = new Uri(baseUrl);
+            // Initialise HttpClient avec BaseAddress pour éviter de répéter l'URL complète à chaque appel
+            _httpClient = new HttpClient
+            {
+                BaseAddress = new Uri(baseUrl)
+            };
         }
 
         /// <summary>
-        /// Démarre le processus d'envoi d'emails en appelant une API sur le backend.
+        /// Prépare les emails à envoyer en appelant l'API /prepare.
         /// </summary>
-        /// <param name="request">Les données de la requête d'envoi d'emails.</param>
-        /// <param name="cancellationToken">Token d'annulation pour arrêter l'opération.</param>
-        /// <returns>Un message de résultat de l'opération (succès ou erreur).</returns>
-        public async Task<string> StartEmailSendingAsync(EmailSendRequest request, CancellationToken cancellationToken)
+        public async Task<List<EmailToSend>?> PrepareEmailsAsync(PrepareEmailRequest request, CancellationToken cancellationToken)
         {
             try
             {
-                // Construit l'URL complète de l'API. Assurez-vous que votre backend a un endpoint correspondant.
-                // Exemple d'endpoint : /api/email/start-sending
-                var response = await _httpClient.PostAsJsonAsync($"{_baseUrl}/api/partneremailsender/send", request, cancellationToken);
+                // Sérialisation en JSON pour inspection/debug
+                var jsonRequest = JsonSerializer.Serialize(request, new JsonSerializerOptions { WriteIndented = true });
+                Console.WriteLine("Request JSON envoyé :");
+                Console.WriteLine(jsonRequest);
 
-                // Vérifie si la requête HTTP a réussi (statut 2xx)
+                var response = await _httpClient.PostAsJsonAsync("api/partneremailsender/prepare", request, cancellationToken);
                 response.EnsureSuccessStatusCode();
 
-                // Lit le contenu de la réponse du serveur
-                var responseString = await response.Content.ReadAsStringAsync();
-                return responseString; // Retourne le message de succès ou d'information du backend
+                var emails = await response.Content.ReadFromJsonAsync<List<EmailToSend>>(cancellationToken: cancellationToken);
+                return emails;
             }
             catch (HttpRequestException ex)
             {
-                // Gère les erreurs de requête HTTP (problèmes de réseau, serveur non joignable, erreur 4xx/5xx du serveur)
-                return $"❌ Erreur réseau ou du serveur: {ex.Message}";
+                throw new ApplicationException($"❌ Erreur HTTP lors de la préparation : {ex.Message}");
+            }
+        }
+
+
+        /// <summary>
+        /// Envoie la liste d'emails préparés en appelant l'API /send.
+        /// </summary>
+        public async Task<string> SendPreparedEmailsAsync(List<EmailToSend> preparedEmails, CancellationToken cancellationToken)
+        {
+            try
+            {
+                var response = await _httpClient.PostAsJsonAsync("api/partneremailsender/send", preparedEmails, cancellationToken);
+                response.EnsureSuccessStatusCode();
+
+                return await response.Content.ReadAsStringAsync();
+            }
+            catch (HttpRequestException ex)
+            {
+                return $"❌ Erreur réseau ou serveur lors de l’envoi des emails préparés : {ex.Message}";
             }
             catch (OperationCanceledException)
             {
-                // Gère l'annulation de l'opération
-                return "Opération d'envoi d'emails annulée.";
+                return "⏹️ Envoi annulé.";
             }
             catch (Exception ex)
             {
-                // Gère toute autre exception inattendue
-                return $"❌ Erreur inattendue lors du démarrage de l'envoi d'emails: {ex.Message}";
+                return $"❌ Erreur inattendue : {ex.Message}";
+            }
+        }
+
+        /// <summary>
+        /// Méthode regroupée qui prépare puis envoie les emails.
+        /// </summary>
+        public async Task<string> StartEmailSendingAsync(PrepareEmailRequest prepareRequest, CancellationToken cancellationToken)
+        {
+            try
+            {
+                var preparedEmails = await PrepareEmailsAsync(prepareRequest, cancellationToken);
+
+                if (preparedEmails == null || preparedEmails.Count == 0)
+                    return "❌ Aucun email préparé.";
+
+                var sendResult = await SendPreparedEmailsAsync(preparedEmails, cancellationToken);
+                return sendResult;
+            }
+            catch (Exception ex)
+            {
+                return $"❌ Erreur inattendue lors du processus d'envoi : {ex.Message}";
             }
         }
     }

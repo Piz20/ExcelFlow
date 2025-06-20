@@ -236,20 +236,14 @@ namespace ExcelFlow.Views
         private async void StartSendingButton_Click(object sender, RoutedEventArgs e)
         {
             TxtLogs.Clear();
-            AppendLog("🚀 Début du processus d'envoi d'emails...\n");
+            AppendLog("🚀 Préparation des emails en cours...\n");
 
-            // Récupération des valeurs à jour depuis l'interface
+            // Récupération des valeurs de l'UI
             _generatedFilesFolderPath = GeneratedFilesFolderTextBox.Text.Trim();
             _partnerEmailFilePath = PartnerEmailFilePathTextBox.Text.Trim();
             string fromDisplayName = FromDisplayNameTextBox.Text.Trim();
             string ccText = CcRecipientsTextBox.Text.Trim();
             string bccText = BccRecipientsTextBox.Text.Trim();
-
-            ProgressBar.Value = 0;
-            ProgressTextBlock.Text = "0%";
-            ProgressBar.Visibility = Visibility.Collapsed;
-            ProgressTextBlock.Visibility = Visibility.Collapsed;
-            ProgressMessageTextBlock.Visibility = Visibility.Collapsed;
 
             if (string.IsNullOrWhiteSpace(_generatedFilesFolderPath) || string.IsNullOrWhiteSpace(_partnerEmailFilePath))
             {
@@ -259,86 +253,48 @@ namespace ExcelFlow.Views
 
             SetUiEnabledState(false);
 
-            // Mise à jour des paramètres SMTP depuis l'AppConfig au moment du clic
             SmtpHost = _appConfig.Smtp.SmtpHost ?? "";
             SmtpPort = _appConfig.Smtp.SmtpPort ?? 0;
             SmtpFromEmail = _appConfig.Smtp.SmtpFromEmail ?? "";
 
-
-            var request = new EmailSendRequest
+            var request = new PrepareEmailRequest
             {
-                GeneratedFilesFolderPath = _generatedFilesFolderPath,
-                PartnerEmailFilePath = _partnerEmailFilePath,
+                GeneratedFilesFolder = _generatedFilesFolderPath,
+                PartnerExcelPath = _partnerEmailFilePath,
                 FromDisplayName = fromDisplayName,
                 CcRecipients = ccText.Split(new[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToList(),
-                BccRecipients = bccText.Split(new[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToList()
+                BccRecipients = bccText.Split(new[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToList(),
+                SmtpHost = SmtpHost,
+                SmtpPort = SmtpPort,
+                SmtpFromEmail = SmtpFromEmail
             };
-
-            if (!string.IsNullOrWhiteSpace(SmtpHost) && SmtpPort > 0 && !string.IsNullOrWhiteSpace(SmtpFromEmail))
-            {
-                request.SmtpHost = SmtpHost;
-                request.SmtpPort = SmtpPort;
-                request.SmtpFromEmail = SmtpFromEmail;
-            }
 
             _cts = new CancellationTokenSource();
 
             try
             {
-                var resultMessage = await _sendEmailService.StartEmailSendingAsync(request, _cts.Token);
-                AppendLog(resultMessage);
+                var preparedEmails = await _sendEmailService.PrepareEmailsAsync(request, _cts.Token);
 
-                if (resultMessage.StartsWith("❌"))
+                if (preparedEmails == null || preparedEmails.Count == 0)
                 {
-                    WpfMsgBox.Show(resultMessage, "Erreur", MessageBoxButton.OK, MessageBoxImage.Error);
+                    WpfMsgBox.Show("Aucun email à préparer.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
                 }
-                else if (_cts.IsCancellationRequested)
-                {
-                    // Opération annulée
-                }
-                else
-                {
-                    WpfMsgBox.Show("🎉 Processus d'envoi d'emails terminé avec succès !", "Succès", MessageBoxButton.OK, MessageBoxImage.Information);
-                }
-            }
-            catch (OperationCanceledException)
-            {
-                WpfMsgBox.Show("L'opération d'envoi d'emails a été annulée.", "Annulation", MessageBoxButton.OK, MessageBoxImage.Information);
-                AppendLog("🛑 Opération annulée par l'utilisateur.");
+
+                // 👉 Affichage dans une nouvelle fenêtre WPF personnalisée
+                var previewWindow = new EmailPreviewWindow(preparedEmails);
+                previewWindow.ShowDialog(); // ou Show() si tu veux laisser la main à l'utilisateur
             }
             catch (Exception ex)
             {
-                WpfMsgBox.Show($"Une erreur inattendue est survenue : {ex.Message}", "Erreur", MessageBoxButton.OK, MessageBoxImage.Error);
-                AppendLog($"❌ Erreur lors de l'envoi d'emails : {ex.Message}");
+                WpfMsgBox.Show($"❌ Erreur lors de la préparation : {ex.Message}", "Erreur", MessageBoxButton.OK, MessageBoxImage.Error);
+                AppendLog($"❌ Erreur lors de la préparation : {ex.Message}");
             }
             finally
             {
                 SetUiEnabledState(true);
-                ProgressBar.Visibility = Visibility.Collapsed;
-                ProgressTextBlock.Visibility = Visibility.Collapsed;
-                ProgressMessageTextBlock.Visibility = Visibility.Collapsed;
                 _cts?.Dispose();
                 _cts = null;
-
-                // Sauvegarde des préférences dans AppConfig
-                _appConfig.SendEmail.PartnerEmailFilePath = _partnerEmailFilePath;
-                _appConfig.SendEmail.GeneratedFilesFolderPath = _generatedFilesFolderPath;
-                _appConfig.SendEmail.FromDisplayName = fromDisplayName;
-                _appConfig.SendEmail.CcRecipients = ccText;
-                _appConfig.SendEmail.BccRecipients = bccText;
-
-                try
-                {
-                    var json = JsonSerializer.Serialize(_appConfig, new JsonSerializerOptions { WriteIndented = true });
-                    File.WriteAllText("appconfigs.json", json);
-                    AppendLog("💾 Préférences d'envoi sauvegardées.");
-                }
-                catch (Exception ex)
-                {
-                    AppendLog($"⚠️ Impossible de sauvegarder les préférences : {ex.Message}");
-                }
-
-                AppendLog("Processus d'envoi d'emails terminé ou annulé.");
             }
         }
 

@@ -37,6 +37,10 @@ builder.Services.AddScoped<EmailDataExtractor>(provider =>
     return new EmailDataExtractor(hubContext);
 });
 
+
+builder.Services.AddScoped<IPartnerEmailSender, PartnerEmailSender>();
+
+
 // PartnerEmailSender depends on SendEmail, EmailDataExtractor, PartnerExcelReader, and EmailContentBuilder.
 // Ensure all its dependencies are registered *before* PartnerEmailSender itself.
 builder.Services.AddScoped<PartnerEmailSender>();
