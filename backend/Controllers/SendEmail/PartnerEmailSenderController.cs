@@ -62,8 +62,8 @@ namespace ExcelFlow.Controllers
         {
             try
             {
-                await _partnerEmailSender.SendPreparedEmailsAsync(emails, cancellationToken);
-                return Ok("Emails envoyés avec succès.");
+                var results = await _partnerEmailSender.SendPreparedEmailsAsync(emails, cancellationToken);
+                return Ok(results); // Renvoie la liste de résultats au frontend
             }
             catch (Exception ex)
             {
@@ -71,6 +71,8 @@ namespace ExcelFlow.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, "Erreur interne lors de l'envoi des emails.");
             }
         }
+
+
 
         /// <summary>
         /// Envoie les fichiers partenaires directement en une seule opération.

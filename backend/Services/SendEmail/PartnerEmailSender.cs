@@ -360,40 +360,69 @@ public class PartnerEmailSender : IPartnerEmailSender
     }
 
 
-    public async Task SendPreparedEmailsAsync(
-        List<EmailToSend> emails,
-        CancellationToken cancellationToken)
+    public async Task<List<EmailSendResult>> SendPreparedEmailsAsync(
+     List<EmailToSend> emails,
+     CancellationToken cancellationToken)
     {
+        var results = new List<EmailSendResult>();
+
         foreach (var email in emails)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            bool sent = await _sendEmailService.SendEmailAsync(
-                subject: email.Subject,
-                body: email.Body,
-                toRecipients: email.ToRecipients,
-                ccRecipients: email.CcRecipients,
-                bccRecipients: email.BccRecipients,
-                fromDisplayName: email.FromDisplayName,
-                attachmentFilePaths: email.AttachmentFilePaths,
-                smtpHost: email.SmtpHost,
-                smtpPort: email.SmtpPort,
-                smtpFromEmail: email.SmtpFromEmail,
-                cancellationToken: cancellationToken
-            );
-
-            if (sent)
+            try
             {
-                // Logging ou notification de succès ici si nécessaire
-                await LogAndSend($"Email envoyé à : {string.Join(", ", email.ToRecipients)}", cancellationToken);
+                cancellationToken.ThrowIfCancellationRequested();
+
+                bool sent = await _sendEmailService.SendEmailAsync(
+                    subject: email.Subject,
+                    body: email.Body,
+                    toRecipients: email.ToRecipients,
+                    ccRecipients: email.CcRecipients,
+                    bccRecipients: email.BccRecipients,
+                    fromDisplayName: email.FromDisplayName,
+                    attachmentFilePaths: email.AttachmentFilePaths,
+                    smtpHost: email.SmtpHost,
+                    smtpPort: email.SmtpPort,
+                    smtpFromEmail: email.SmtpFromEmail,
+                    cancellationToken: cancellationToken
+                );
+
+                if (sent)
+                {
+                    await LogAndSend($"Email envoyé à : {string.Join(", ", email.ToRecipients)}", cancellationToken);
+
+                    results.Add(new EmailSendResult
+                    {
+                        To = string.Join(", ", email.ToRecipients),
+                        Success = true,
+                        ErrorMessage = null
+                    });
+                }
+                else
+                {
+                    await LogAndSendError($"Échec de l'envoi de l'email à : {string.Join(", ", email.ToRecipients)}", cancellationToken);
+
+                    results.Add(new EmailSendResult
+                    {
+                        To = string.Join(", ", email.ToRecipients),
+                        Success = false,
+                        ErrorMessage = "Échec inconnu de l'envoi"
+                    });
+                }
             }
-            else
+            catch (Exception ex)
             {
-                // Logging ou notification d’échec
-                await LogAndSendError($"Échec de l'envoi de l'email à : {string.Join(", ", email.ToRecipients)}", cancellationToken);
+                results.Add(new EmailSendResult
+                {
+                    To = string.Join(", ", email.ToRecipients),
+                    Success = false,
+                    ErrorMessage = ex.Message
+                });
             }
         }
+
+        return results;
     }
 
-
 }
+
+

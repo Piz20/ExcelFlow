@@ -39,15 +39,15 @@ namespace ExcelFlow.Controllers
 
                 using var stream = System.IO.File.Open(request.FilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                 using var workbook = new XLWorkbook(stream);
-// Cherche dans toutes les feuilles une qui a un nom égal au SheetName trimé
-var worksheet = workbook.Worksheets
-    .FirstOrDefault(ws => ws.Name.Trim().Equals(request.SheetName?.Trim(), StringComparison.OrdinalIgnoreCase));
+                // Cherche dans toutes les feuilles une qui a un nom égal au SheetName trimé
+                var worksheet = workbook.Worksheets
+                    .FirstOrDefault(ws => ws.Name.Trim().Equals(request.SheetName?.Trim(), StringComparison.OrdinalIgnoreCase));
 
-if (worksheet == null)
-{
-    await _hubContext.Clients.All.SendAsync("ReceiveLog", $"❌ La feuille '{request.SheetName}' est introuvable.");
-    return BadRequest($"La feuille '{request.SheetName}' est introuvable dans le fichier Excel.");
-}
+                if (worksheet == null)
+                {
+                    await _hubContext.Clients.All.SendAsync("ReceiveLog", $"❌ La feuille '{request.SheetName}' est introuvable.");
+                    return BadRequest($"La feuille '{request.SheetName}' est introuvable dans le fichier Excel.");
+                }
 
 
                 // On passe le token d'annulation
@@ -74,7 +74,7 @@ if (worksheet == null)
                 return StatusCode(500, $"❌ Erreur lors de la génération : {ex.Message}");
             }
         }
-      
+
 
     }
 }

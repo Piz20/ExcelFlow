@@ -29,6 +29,14 @@ public class PrepareEmailRequest
     public List<string>? BccRecipients { get; set; }
 }
 
+
+public class EmailSendResult
+{
+    public string To { get; set; } = string.Empty;
+    public bool Success { get; set; }
+    public string? ErrorMessage { get; set; }
+}
+
 public interface IPartnerEmailSender
 {
     Task<List<EmailToSend>> PrepareCompleteEmailsAsync(
@@ -42,7 +50,7 @@ public interface IPartnerEmailSender
         List<string>? bccRecipients,
         CancellationToken cancellationToken);
 
-    Task SendPreparedEmailsAsync(List<EmailToSend> emails, CancellationToken cancellationToken);
+    Task<List<EmailSendResult>> SendPreparedEmailsAsync(List<EmailToSend> emails, CancellationToken cancellationToken);
 
 
     Task SendEmailsToPartnersWithAttachments(
