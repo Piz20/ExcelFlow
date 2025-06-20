@@ -2,6 +2,8 @@ using System;
 using System.Windows;
 using System.Windows.Controls;
 using ExcelFlow.Models;
+using System.Text.Json;
+using System.IO;
 using ExcelFlow.Utilities;
 using WpfMsgBox = System.Windows.MessageBox;
 using WpsMsgBoxImage = System.Windows.MessageBoxImage;
@@ -55,18 +57,27 @@ namespace ExcelFlow.Views
                 ShowMsg("L'adresse e-mail de l'expéditeur est invalide."); return;
             }
 
-            // Sauvegarder dans l’objet de configuration (même logique que SendEmail)
             _appConfig.Smtp.SmtpHost = SmtpHost;
             _appConfig.Smtp.SmtpPort = SmtpPort;
             _appConfig.Smtp.SmtpFromEmail = SmtpFromEmail;
 
-            // Notifier les autres composants si besoin
             SmtpConfigChanged?.Invoke(new SmtpConfig
             {
                 SmtpHost = SmtpHost,
                 SmtpPort = SmtpPort,
                 SmtpFromEmail = SmtpFromEmail
             });
+
+            try
+            {
+                var json = JsonSerializer.Serialize(_appConfig, new JsonSerializerOptions { WriteIndented = true });
+                File.WriteAllText("appconfigs.json", json);
+            }
+            catch (Exception ex)
+            {
+                ShowMsg($"⚠️ Erreur lors de l'enregistrement de la configuration SMTP : {ex.Message}", "Erreur", MessageBoxImage.Warning);
+                return;
+            }
 
             ShowMsg("Configuration SMTP sauvegardée avec succès !", "Succès", MessageBoxImage.Information);
         }

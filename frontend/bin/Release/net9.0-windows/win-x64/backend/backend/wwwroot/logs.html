@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8" />
+    <title>Logs en temps réel</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        #logContainer {
+            border: 1px solid #ccc;
+            height: 400px;
+            overflow-y: scroll;
+            padding: 10px;
+            background: #f9f9f9;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <h2>Logs en directe</h2>
+    <div id="logContainer"></div>
+
+    <script>
+        // 1. Créer la connexion SignalR vers ton Hub (attention à l'URL)
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("/partnerFileHub")  // adapte ce chemin à ton endpoint Hub côté serveur
+            .build();
+
+        // 2. Fonction pour ajouter un message dans la div
+        function addLogMessage(message) {
+            const logContainer = document.getElementById("logContainer");
+            const newMessage = document.createElement("div");
+            newMessage.textContent = message;
+            logContainer.appendChild(newMessage);
+            logContainer.scrollTop = logContainer.scrollHeight; // scroll vers le bas automatiquement
+        }
+
+        // 3. Écouteur pour recevoir les messages "ReceiveMessage"
+        connection.on("ReceiveMessage", (message) => {
+            addLogMessage(message);
+        });
+
+        // 4. Démarrer la connexion SignalR
+        connection.start()
+            .then(() => addLogMessage("🔌 Connecté au serveur SignalR"))
+            .catch(err => addLogMessage("❌ Erreur connexion SignalR: " + err));
+    </script>
+</body>
+</html>
