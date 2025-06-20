@@ -9,6 +9,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using Microsoft.AspNetCore.SignalR.Client;
 
 using ExcelFlow.Services;
 using ExcelFlow.Models;
@@ -19,6 +20,7 @@ namespace ExcelFlow
 {
     public partial class EmailPreviewWindow : Window
     {
+        private readonly HubConnection _hubConnection;
         private CancellationTokenSource? _cts;
 
         public class EmailToSendViewModel : INotifyPropertyChanged
@@ -146,10 +148,23 @@ namespace ExcelFlow
 
         private readonly SendEmailService _sendEmailService;
 
+
+
+
+
+
+
+
+
         public EmailPreviewWindow(List<EmailToSend> preparedEmails)
         {
             InitializeComponent();
 
+
+            _hubConnection = new HubConnectionBuilder()
+               .WithUrl("https://localhost:7274/partnerFileHub")
+               .WithAutomaticReconnect()
+               .Build();
             // Initialise le service avec l'URL de ton backend (ajuste si nécessaire)
             _sendEmailService = new SendEmailService("https://localhost:7274");
 
@@ -162,8 +177,101 @@ namespace ExcelFlow
 
             EmailsDataGrid.ItemsSource = _emailViewModels;
             UpdateSelectedEmailsCount();
+
+
+            // Configuration des gestionnaires SignalR
+            _hubConnection.On<string>("ReceiveMessage", message =>
+            {
+                Dispatcher.Invoke(() => AppendLog(message));
+            });
+
+            _hubConnection.On<string>("ReceiveErrorMessage", message =>
+            {
+                Dispatcher.Invoke(() => AppendLog($"❌ ERREUR: {message}"));
+            });
+
+            _hubConnection.On<ProgressUpdate>("ReceiveProgressUpdate", data =>
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    ProgressBar.Visibility = Visibility.Visible;
+                    ProgressTextBlock.Visibility = Visibility.Visible;
+                    ProgressBar.Minimum = 0;
+                    ProgressBar.Maximum = data.Total > 0 ? data.Total : 1;
+                    ProgressBar.Value = data.Current;
+                    ProgressTextBlock.Text = $"{data.Percentage}%";
+                    AppendLog(data.Message ?? "");
+                });
+            });
+
+            _hubConnection.On<List<PartnerInfo>>("ReceiveIdentifiedPartners", partners =>
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    AppendLog($"Reçu {partners.Count} partenaires identifiés.");
+                });
+            });
+
+            _hubConnection.On<SentEmailSummary>("ReceiveSentEmailSummary", summary =>
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    AppendLog($"Email envoyé : '{summary.FileName}' à '{summary.PartnerName}'.");
+                });
+            });
+
+            _hubConnection.On<int>("ReceiveTotalFilesCount", totalFiles =>
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    AppendLog($"Total de fichiers détectés : {totalFiles}.");
+                });
+            });
+
+            _hubConnection.Reconnected += (sender) =>
+            {
+                Dispatcher.Invoke(() => AppendLog("🔌 Reconnexion au hub réussie."));
+                return Task.CompletedTask;
+            };
+            _hubConnection.Reconnecting += (ex) =>
+            {
+                Dispatcher.Invoke(() => AppendLog($"🔌 Reconnexion au hub en cours... {ex?.Message}"));
+                return Task.CompletedTask;
+            };
+            _hubConnection.Closed += (ex) =>
+            {
+                Dispatcher.Invoke(() => AppendLog($"❌ Connexion au hub fermée : {ex?.Message}"));
+                return Task.CompletedTask;
+            };
+
+
+            this.Loaded += EmailPreviewWindow_Loaded;
+
+
         }
 
+
+    private async void EmailPreviewWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+            await StartSignalRConnection();
+        }
+
+        private async Task StartSignalRConnection()
+        {
+            try
+            {
+                if (_hubConnection.State == HubConnectionState.Disconnected)
+                {
+                    await _hubConnection.StartAsync();
+                    AppendLog("🔌 Connecté au Service d'Envoi de mails.");
+                }
+            }
+            catch (Exception ex)
+            {
+                AppendLog($"❌ Impossible de se connecter au SignalR Hub: {ex.Message}");
+                WpfMsgBox.Show($"Impossible de se connecter au service. Assurez-vous que le backend est en cours d'exécution.\nErreur: {ex.Message}", "Erreur de Connexion", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
         private void EmailVM_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
             if (e.PropertyName == nameof(EmailToSendViewModel.IsSelected))
@@ -333,6 +441,16 @@ namespace ExcelFlow
             }
         }
 
+        private void ClearLogs_Click(object sender, RoutedEventArgs e)
+        {
+            TxtLogs.Clear();
+        }
+
+        private void AppendLog(string message)
+        {
+            TxtLogs.AppendText($"{DateTime.Now:HH:mm:ss} - {message}{Environment.NewLine}");
+            TxtLogs.ScrollToEnd();
+        }
 
         private void StopButton_Click(object sender, EventArgs e)
         {

@@ -9,49 +9,38 @@
 
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
-        <!-- Style pour les boutons avec taille réduite -->
-        <Style x:Key="ButtonStyle"
-                TargetType="Button">
-            <Setter Property="Margin"
-                    Value="5,0"/>
-            <Setter Property="Padding"
-                    Value="10,5"/>
-            <Setter Property="MinWidth"
-                    Value="150"/>
-            <Setter Property="Height"
-                    Value="30"/>
-            <Setter Property="FontSize"
-                    Value="13"/>
-            <Setter Property="FontWeight"
-                    Value="SemiBold"/>
-            <Setter Property="BorderThickness"
-                    Value="1"/>
-            <Setter Property="BorderBrush"
-                    Value="#333333"/>
+        <Style x:Key="ButtonStyle" TargetType="Button">
+            <Setter Property="Margin" Value="5,0"/>
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="MinWidth" Value="150"/>
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="#333333"/>
         </Style>
-        <!-- Style pour désactiver la surbrillance des lignes sélectionnées -->
         <Style TargetType="DataGridRow">
-            <Setter Property="IsSelected"
-                    Value="False"/>
+            <Setter Property="IsSelected" Value="False"/>
             <Style.Triggers>
-                <Trigger Property="IsSelected"
-                        Value="True">
-                    <Setter Property="Background"
-                            Value="Transparent"/>
-                    <Setter Property="BorderBrush"
-                            Value="Transparent"/>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="Transparent"/>
+                    <Setter Property="BorderBrush" Value="Transparent"/>
                 </Trigger>
             </Style.Triggers>
         </Style>
     </Window.Resources>
 
-    <DockPanel Margin="10"
-            LastChildFill="False">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>   <!-- Ligne 0: Sélection -->
+            <RowDefinition Height="*"/>      <!-- Ligne 1: DataGrid scrollable -->
+            <RowDefinition Height="Auto"/>   <!-- Ligne 2: Barre de progression -->
+            <RowDefinition Height="Auto"/>   <!-- Ligne 3: Zone logs -->
+            <RowDefinition Height="Auto"/>   <!-- Ligne 4: Boutons -->
+        </Grid.RowDefinitions>
 
-        <!-- Barre de sélection globale en haut -->
-        <StackPanel DockPanel.Dock="Top"
-                    Orientation="Horizontal"
-                    Margin="0,0,0,15">
+        <!-- Zone de sélection -->
+        <StackPanel Orientation="Horizontal" Grid.Row="0" Margin="0,0,0,10">
             <CheckBox x:Name="SelectAllCheckBox"
                       Content="Tout sélectionner"
                       Click="SelectAllCheckBox_Click"
@@ -65,91 +54,134 @@
                        Margin="10,0,0,0"/>
         </StackPanel>
 
-        <!-- DataGrid principal au centre -->
-        <DataGrid x:Name="EmailsDataGrid"
-                  DockPanel.Dock="Top"
-                  AutoGenerateColumns="False"
-                  CanUserAddRows="False"
-                  SelectionMode="Single"
-                  SelectionUnit="Cell"
-                  HeadersVisibility="Column"
-                  IsReadOnly="True"
-                  RowHeight="40"
-                  MaxHeight="450">
+        <!-- Zone scrollable pour DataGrid -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <DataGrid x:Name="EmailsDataGrid"
+                      AutoGenerateColumns="False"
+                      CanUserAddRows="False"
+                      SelectionMode="Single"
+                      SelectionUnit="Cell"
+                      HeadersVisibility="Column"
+                      IsReadOnly="True"
+                      RowHeight="40"
+                      MaxHeight="450"
+                      MinHeight="200">
 
-            <DataGrid.Columns>
+                <DataGrid.Columns>
+                    <DataGridCheckBoxColumn Header=""
+                                            Binding="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                            Width="40"
+                                            ElementStyle="{StaticResource {x:Type CheckBox}}"/>
+                    <DataGridTemplateColumn Header="Partenaire" Width="200">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <ComboBox ItemsSource="{Binding PartnerNameList}"
+                                          SelectedItem="{Binding SelectedPartner, Mode=TwoWay}"
+                                          IsEditable="False"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="Fichier à envoyer" Width="*">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <ComboBox ItemsSource="{Binding AttachmentFilePaths}"
+                                          SelectedItem="{Binding SelectedAttachment, Mode=TwoWay}"
+                                          IsEditable="False"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="Destinataires" Width="250">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <ComboBox ItemsSource="{Binding ToRecipients}"
+                                          SelectedItem="{Binding SelectedRecipient, Mode=TwoWay}"
+                                          IsEditable="False"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="Statut" Width="100">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel HorizontalAlignment="Center">
+                                    <ProgressBar Width="50"
+                                                 Height="8"
+                                                 IsIndeterminate="True"
+                                                 Visibility="{Binding IsSending, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                                    <TextBlock Text="✔"
+                                               Foreground="Green"
+                                               FontWeight="Bold"
+                                               FontSize="16"
+                                               Visibility="{Binding IsSuccess, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                                    <TextBlock Text="❌"
+                                               Foreground="Red"
+                                               FontWeight="Bold"
+                                               FontSize="16"
+                                               Visibility="{Binding IsFailure, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </DataGrid.Columns>
+            </DataGrid>
+        </ScrollViewer>
 
-                <!-- Case à cocher interactive sans intitulé -->
-                <DataGridCheckBoxColumn Header=""
-                                        Binding="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                        Width="40"
-                                        ElementStyle="{StaticResource {x:Type CheckBox}}"/>
+        <!-- Barre de progression -->
+        <StackPanel Orientation="Horizontal" Grid.Row="2" Margin="0,10,0,10" VerticalAlignment="Center">
+            <ProgressBar x:Name="ProgressBar"
+                         Height="20"
+                         Width="300"
+                         Visibility="Collapsed"
+                         Minimum="0"
+                         Maximum="100"
+                         Margin="0,0,10,0"/>
+            <TextBlock x:Name="ProgressTextBlock"
+                       FontSize="14"
+                       FontWeight="Bold"
+                       VerticalAlignment="Center"
+                       Visibility="Collapsed"/>
+        </StackPanel>
 
-                <DataGridTemplateColumn Header="Partenaire"
-                                        Width="200">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <ComboBox ItemsSource="{Binding PartnerNameList}"
-                                      SelectedItem="{Binding SelectedPartner, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                      IsEditable="False"/>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
+        <!-- Zone de logs -->
+        <Border Grid.Row="3"
+                BorderBrush="#DDD"
+                BorderThickness="1"
+                CornerRadius="5"
+                Background="#FFF9F9F9"
+                Padding="5"
+                Margin="0,0,0,10">
+            <Grid>
+                <Button Content="🗑️"
+                        FontSize="14"
+                        Width="28"
+                        Height="28"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Top"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        ToolTip="Vider les logs"
+                        Click="ClearLogs_Click"/>
 
-                <DataGridTemplateColumn Header="Fichier à envoyer"
-                                        Width="*">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <ComboBox ItemsSource="{Binding AttachmentFilePaths}"
-                                      SelectedItem="{Binding SelectedAttachment, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                      IsEditable="False"/>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
+                <ScrollViewer VerticalScrollBarVisibility="Auto"
+                              Margin="0,35,0,0"
+                              Height="120">
+                    <TextBox x:Name="TxtLogs"
+                             FontFamily="Consolas"
+                             FontSize="12"
+                             IsReadOnly="True"
+                             TextWrapping="Wrap"
+                             VerticalScrollBarVisibility="Auto"
+                             AcceptsReturn="True"
+                             Background="Transparent"
+                             BorderThickness="0"/>
+                </ScrollViewer>
+            </Grid>
+        </Border>
 
-                <DataGridTemplateColumn Header="Destinataires"
-                                        Width="250">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <ComboBox ItemsSource="{Binding ToRecipients}"
-                                      SelectedItem="{Binding SelectedRecipient, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                      IsEditable="False"/>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-
-                <DataGridTemplateColumn Header="Statut"
-                                        Width="100">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <StackPanel HorizontalAlignment="Center">
-                                <ProgressBar Width="50"
-                                             Height="8"
-                                             IsIndeterminate="True"
-                                             Visibility="{Binding IsSending, Converter={StaticResource BoolToVisibilityConverter}}"/>
-                                <TextBlock Text="✔"
-                                           Foreground="Green"
-                                           FontWeight="Bold"
-                                           FontSize="16"
-                                           Visibility="{Binding IsSuccess, Converter={StaticResource BoolToVisibilityConverter}}"/>
-                                <TextBlock Text="❌"
-                                           Foreground="Red"
-                                           FontWeight="Bold"
-                                           FontSize="16"
-                                           Visibility="{Binding IsFailure, Converter={StaticResource BoolToVisibilityConverter}}"/>
-                            </StackPanel>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-
-            </DataGrid.Columns>
-        </DataGrid>
-
-        <!-- Boutons en bas à droite -->
-        <StackPanel DockPanel.Dock="Bottom"
+        <!-- Boutons -->
+        <StackPanel Grid.Row="4"
                     Orientation="Horizontal"
                     HorizontalAlignment="Right"
-                    Margin="0,20,0,10">
+                    Margin="0,10,0,0">
             <Button x:Name="SendSelectedButton"
                     Content="Envoyer les emails sélectionnés"
                     Click="SendSelectedButton_Click"
@@ -165,5 +197,5 @@
                     IsEnabled="False"/>
         </StackPanel>
 
-    </DockPanel>
+    </Grid>
 </Window>
