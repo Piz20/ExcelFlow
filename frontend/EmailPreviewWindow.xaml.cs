@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using ExcelFlow.Services;
 using ExcelFlow.Models;
 using WpfMsgBox = System.Windows.MessageBox;
 using wpfCheckBox = System.Windows.Controls.CheckBox;
@@ -95,7 +96,7 @@ namespace ExcelFlow
             private string _selectedAttachment;
             public string SelectedAttachment
             {
-                get => _selectedAttachment;
+                get => _selectedAttachment; // Corrigé pour retourner _selectedAttachment
                 set
                 {
                     if (_selectedAttachment != value)
@@ -141,36 +142,42 @@ namespace ExcelFlow
 
         private readonly ObservableCollection<EmailToSendViewModel> _emailViewModels = new();
 
+        private readonly SendEmailService _sendEmailService;
+
         public EmailPreviewWindow(List<EmailToSend> preparedEmails)
         {
             InitializeComponent();
 
-            // Initialiser explicitement la couleur du bouton Stop à rouge pâle
-            StopButton.Background = new SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#FF9999"));
+            // Initialise le service avec l'URL de ton backend (ajuste si nécessaire)
+            _sendEmailService = new SendEmailService("https://localhost:7274");
 
             foreach (var email in preparedEmails)
             {
                 var vm = new EmailToSendViewModel(email);
-                vm.PropertyChanged += EmailVM_PropertyChanged; // pour suivre la sélection
+                vm.PropertyChanged += EmailVM_PropertyChanged;
                 _emailViewModels.Add(vm);
             }
 
             EmailsDataGrid.ItemsSource = _emailViewModels;
-
-            UpdateSelectAllCheckBox();
+            UpdateSelectedEmailsCount();
         }
 
         private void EmailVM_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
             if (e.PropertyName == nameof(EmailToSendViewModel.IsSelected))
             {
-                UpdateSelectAllCheckBox();
-                UpdateSendButtonEnabled();
+                UpdateSelectedEmailsCount();
             }
         }
 
-        private void UpdateSelectAllCheckBox()
+        private void UpdateSelectedEmailsCount()
         {
+            if (SelectedEmailsCountTextBlock == null)
+                return;
+
+            int selectedCount = _emailViewModels.Count(vm => vm.IsSelected);
+            SelectedEmailsCountTextBlock.Text = $"Emails sélectionnés : {selectedCount}";
+
             if (SelectAllCheckBox == null)
                 return;
 
@@ -189,14 +196,11 @@ namespace ExcelFlow
                 SelectAllCheckBox.IsChecked = null; // état indéterminé
                 SelectAllCheckBox.Content = "Tout sélectionner";
             }
-        }
 
-        private void UpdateSendButtonEnabled()
-        {
-            if (SendSelectedButton == null)
-                return;
-
-            SendSelectedButton.IsEnabled = _emailViewModels.Any(vm => vm.IsSelected);
+            if (SendSelectedButton != null)
+            {
+                SendSelectedButton.IsEnabled = selectedCount > 0;
+            }
         }
 
         private void SelectAllCheckBox_Click(object sender, RoutedEventArgs e)
@@ -210,9 +214,7 @@ namespace ExcelFlow
                     emailVM.IsSelected = isChecked;
                 }
 
-                cb.Content = isChecked ? "Ne rien sélectionner" : "Tout sélectionner";
-
-                UpdateSendButtonEnabled();
+                UpdateSelectedEmailsCount();
             }
         }
 
@@ -226,68 +228,68 @@ namespace ExcelFlow
                 return;
             }
 
-            // Afficher le nombre d'emails sélectionnés
-            WpfMsgBox.Show($"Nombre d'emails à envoyer : {toSend.Count}", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
-
             _cts = new CancellationTokenSource();
 
-            // Nettoyer la colonne Statut pour les emails sélectionnés
+            // Réinitialisation des statuts
             foreach (var vm in toSend)
             {
-                vm.IsSending = false;
+                vm.IsSending = true;
                 vm.IsSuccess = false;
                 vm.IsFailure = false;
             }
 
-            // Bloquer les contrôles sauf le bouton Stop
+            // Blocage de l'UI
             EmailsDataGrid.IsEnabled = false;
             SelectAllCheckBox.IsEnabled = false;
             SendSelectedButton.IsEnabled = false;
             StopButton.IsEnabled = true;
-            StopButton.Background = new SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#F44336"));
 
             try
             {
+                // Appel de ton vrai service d'envoi
+                var emailsToSend = toSend.Select(vm => vm.Email).ToList();
+                string result = await _sendEmailService.SendPreparedEmailsAsync(emailsToSend, _cts.Token);
+
+                // Marquer tous les envois comme réussis si pas d'exception
                 foreach (var vm in toSend)
                 {
-                    _cts.Token.ThrowIfCancellationRequested();
-
-                    vm.IsSending = true;
-
-                    await Task.Delay(1000, _cts.Token); // Simulation, à remplacer par l'envoi réel
-
-                    bool success = true; // succès simulé
-
                     vm.IsSending = false;
-                    vm.IsSuccess = success;
-                    vm.IsFailure = !success;
+                    vm.IsSuccess = true;
+                    vm.IsFailure = false;
                 }
+
+                WpfMsgBox.Show(result, "Résultat", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (OperationCanceledException)
             {
                 WpfMsgBox.Show("L'envoi a été annulé.", "Annulé", MessageBoxButton.OK, MessageBoxImage.Information);
-
-                foreach (var vm in _emailViewModels)
+                foreach (var vm in toSend)
                 {
-                    if (vm.IsSending)
-                    {
-                        vm.IsSending = false;
-                        vm.IsSuccess = false;
-                        vm.IsFailure = false;
-                    }
+                    vm.IsSending = false;
+                    vm.IsSuccess = false;
+                    vm.IsFailure = false;
                 }
+            }
+            catch (Exception ex)
+            {
+                foreach (var vm in toSend)
+                {
+                    vm.IsSending = false;
+                    vm.IsSuccess = false;
+                    vm.IsFailure = true;
+                }
+
+                WpfMsgBox.Show($"Une erreur est survenue : {ex.Message}", "Erreur", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
                 _cts.Dispose();
                 _cts = null;
 
-                // Réactiver les contrôles et rétablir la couleur du bouton Stop
                 EmailsDataGrid.IsEnabled = true;
                 SelectAllCheckBox.IsEnabled = true;
-                StopButton.Background = new SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#FF9999"));
-                UpdateSendButtonEnabled();
                 StopButton.IsEnabled = false;
+                UpdateSelectedEmailsCount();
             }
         }
 

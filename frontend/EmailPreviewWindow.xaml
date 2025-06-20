@@ -43,6 +43,11 @@
                       Margin="0,0,10,0"
                       VerticalAlignment="Center"
                       FontSize="14"/>
+            <TextBlock x:Name="SelectedEmailsCountTextBlock"
+                       Text="Emails sélectionnés : 0"
+                       VerticalAlignment="Center"
+                       FontSize="14"
+                       Margin="10,0,0,0"/>
         </StackPanel>
 
         <!-- DataGrid principal au centre -->
@@ -59,8 +64,8 @@
 
             <DataGrid.Columns>
 
-                <!-- Case à cocher interactive -->
-                <DataGridCheckBoxColumn Header="✔"
+                <!-- Case à cocher interactive sans intitulé -->
+                <DataGridCheckBoxColumn Header=""
                                         Binding="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                         Width="40"
                                         ElementStyle="{StaticResource {x:Type CheckBox}}"/>
