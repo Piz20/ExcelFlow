@@ -14,26 +14,16 @@
 
         <Style x:Key="ClearButtonStyle"
                TargetType="Button">
-            <Setter Property="Width"
-                    Value="20"/>
-            <Setter Property="Height"
-                    Value="20"/>
-            <Setter Property="VerticalAlignment"
-                    Value="Center"/>
-            <Setter Property="Margin"
-                    Value="5 0 0 0"/>
-            <Setter Property="Background"
-                    Value="Transparent"/>
-            <Setter Property="Foreground"
-                    Value="Gray"/>
-            <Setter Property="BorderThickness"
-                    Value="0"/>
-            <Setter Property="Cursor"
-                    Value="Hand"/>
-            <Setter Property="FontWeight"
-                    Value="Bold"/>
-            <Setter Property="Padding"
-                    Value="0"/>
+            <Setter Property="Width" Value="20"/>
+            <Setter Property="Height" Value="20"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="5 0 0 0"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="Gray"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Padding" Value="0"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
@@ -47,10 +37,8 @@
                 </Setter.Value>
             </Setter>
             <Style.Triggers>
-                <Trigger Property="IsMouseOver"
-                         Value="True">
-                    <Setter Property="Foreground"
-                            Value="Red"/>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Foreground" Value="Red"/>
                 </Trigger>
             </Style.Triggers>
         </Style>
@@ -58,32 +46,28 @@
 
     <Grid Margin="10">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>   <!-- Titre -->
+            <RowDefinition Height="Auto"/>   <!-- Champs fichiers / dossiers -->
+            <RowDefinition Height="Auto"/>   <!-- Index / Count -->
+            <RowDefinition Height="*"/>      <!-- Logs + contrôles -->
         </Grid.RowDefinitions>
 
+        <!-- Titre -->
         <TextBlock Grid.Row="0"
                    Text="ExcelFlow - Génération de rapports"
                    FontSize="20"
                    FontWeight="Bold"
                    Margin="0 0 0 20"/>
 
+        <!-- Champs fichiers / dossiers -->
         <StackPanel Grid.Row="1"
                     Orientation="Vertical"
                     Margin="0 0 0 20">
-            <Border BorderBrush="Gray"
-                    BorderThickness="1"
-                    Padding="10"
-                    Margin="0 0 0 10"
-                    CornerRadius="5">
+
+            <!-- Fichier Source -->
+            <Border BorderBrush="Gray" BorderThickness="1" Padding="10" Margin="0 0 0 10" CornerRadius="5">
                 <DockPanel>
-                    <TextBlock Text="Fichier Source"
-                               FontWeight="Bold"
-                               Background="White"
-                               DockPanel.Dock="Top"
-                               Margin="0 0 0 5"/>
+                    <TextBlock Text="Fichier Source" FontWeight="Bold" Background="White" DockPanel.Dock="Top" Margin="0 0 0 5"/>
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
@@ -91,10 +75,7 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
-                        <TextBox x:Name="TxtSourceFilePath"
-                                 Grid.Column="0"
-                                 HorizontalAlignment="Stretch"
-                                 Padding="5"/>
+                        <TextBox x:Name="TxtSourceFilePath" Grid.Column="0" Padding="5"/>
 
                         <Button x:Name="ClearSourceFileButton"
                                 Grid.Column="1"
@@ -102,23 +83,20 @@
                                 ToolTip="Effacer le chemin du fichier source"
                                 Click="ClearSourceFileButton_Click">
                             <Button.Style>
-                                <Style TargetType="Button"
-                                       BasedOn="{StaticResource ClearButtonStyle}">
-                                    <Setter Property="Visibility"
-                                            Value="Collapsed"/>
+                                <Style TargetType="Button" BasedOn="{StaticResource ClearButtonStyle}">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
                                     <Style.Triggers>
-                                        <DataTrigger Binding="{Binding Text, ElementName=TxtSourceFilePath, Converter={StaticResource StringIsNullOrEmptyConverter}}"
-                                                     Value="False">
-                                            <Setter Property="Visibility"
-                                                    Value="Visible"/>
+                                        <DataTrigger Binding="{Binding Text, ElementName=TxtSourceFilePath, Converter={StaticResource StringIsNullOrEmptyConverter}}" Value="False">
+                                            <Setter Property="Visibility" Value="Visible"/>
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
                             </Button.Style>
                         </Button>
+
                         <Button x:Name="BtnSelectSourceFile"
-                                Content="Sélectionner"
                                 Grid.Column="2"
+                                Content="Sélectionner"
                                 Width="100"
                                 Margin="10 0 0 0"
                                 Click="BtnSelectSourceFile_Click"/>
@@ -126,17 +104,10 @@
                 </DockPanel>
             </Border>
 
-            <Border BorderBrush="Gray"
-                    BorderThickness="1"
-                    Padding="10"
-                    Margin="0 0 0 10"
-                    CornerRadius="5">
+            <!-- Fichier Modèle -->
+            <Border BorderBrush="Gray" BorderThickness="1" Padding="10" Margin="0 0 0 10" CornerRadius="5">
                 <DockPanel>
-                    <TextBlock Text="Fichier Modèle"
-                               FontWeight="Bold"
-                               Background="White"
-                               DockPanel.Dock="Top"
-                               Margin="0 0 0 5"/>
+                    <TextBlock Text="Fichier Modèle" FontWeight="Bold" Background="White" DockPanel.Dock="Top" Margin="0 0 0 5"/>
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
@@ -144,10 +115,7 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
-                        <TextBox x:Name="TxtTemplateFilePath"
-                                 Grid.Column="0"
-                                 HorizontalAlignment="Stretch"
-                                 Padding="5"/>
+                        <TextBox x:Name="TxtTemplateFilePath" Grid.Column="0" Padding="5"/>
 
                         <Button x:Name="ClearTemplateFileButton"
                                 Grid.Column="1"
@@ -155,23 +123,20 @@
                                 ToolTip="Effacer le chemin du fichier modèle"
                                 Click="ClearTemplateFileButton_Click">
                             <Button.Style>
-                                <Style TargetType="Button"
-                                       BasedOn="{StaticResource ClearButtonStyle}">
-                                    <Setter Property="Visibility"
-                                            Value="Collapsed"/>
+                                <Style TargetType="Button" BasedOn="{StaticResource ClearButtonStyle}">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
                                     <Style.Triggers>
-                                        <DataTrigger Binding="{Binding Text, ElementName=TxtTemplateFilePath, Converter={StaticResource StringIsNullOrEmptyConverter}}"
-                                                     Value="False">
-                                            <Setter Property="Visibility"
-                                                    Value="Visible"/>
+                                        <DataTrigger Binding="{Binding Text, ElementName=TxtTemplateFilePath, Converter={StaticResource StringIsNullOrEmptyConverter}}" Value="False">
+                                            <Setter Property="Visibility" Value="Visible"/>
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
                             </Button.Style>
                         </Button>
+
                         <Button x:Name="BtnSelectTemplateFile"
-                                Content="Sélectionner"
                                 Grid.Column="2"
+                                Content="Sélectionner"
                                 Width="100"
                                 Margin="10 0 0 0"
                                 Click="BtnSelectTemplateFile_Click"/>
@@ -179,16 +144,10 @@
                 </DockPanel>
             </Border>
 
-            <Border BorderBrush="Gray"
-                    BorderThickness="1"
-                    Padding="10"
-                    CornerRadius="5">
+            <!-- Dossier de sortie -->
+            <Border BorderBrush="Gray" BorderThickness="1" Padding="10" CornerRadius="5">
                 <DockPanel>
-                    <TextBlock Text="Dossier de sortie"
-                               FontWeight="Bold"
-                               Background="White"
-                               DockPanel.Dock="Top"
-                               Margin="0 0 0 5"/>
+                    <TextBlock Text="Dossier de sortie" FontWeight="Bold" Background="White" DockPanel.Dock="Top" Margin="0 0 0 5"/>
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
@@ -196,10 +155,7 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
-                        <TextBox x:Name="TxtOutputDir"
-                                 Grid.Column="0"
-                                 HorizontalAlignment="Stretch"
-                                 Padding="5"/>
+                        <TextBox x:Name="TxtOutputDir" Grid.Column="0" Padding="5"/>
 
                         <Button x:Name="ClearOutputDirButton"
                                 Grid.Column="1"
@@ -207,23 +163,20 @@
                                 ToolTip="Effacer le chemin du dossier de sortie"
                                 Click="ClearOutputDirButton_Click">
                             <Button.Style>
-                                <Style TargetType="Button"
-                                       BasedOn="{StaticResource ClearButtonStyle}">
-                                    <Setter Property="Visibility"
-                                            Value="Collapsed"/>
+                                <Style TargetType="Button" BasedOn="{StaticResource ClearButtonStyle}">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
                                     <Style.Triggers>
-                                        <DataTrigger Binding="{Binding Text, ElementName=TxtOutputDir, Converter={StaticResource StringIsNullOrEmptyConverter}}"
-                                                     Value="False">
-                                            <Setter Property="Visibility"
-                                                    Value="Visible"/>
+                                        <DataTrigger Binding="{Binding Text, ElementName=TxtOutputDir, Converter={StaticResource StringIsNullOrEmptyConverter}}" Value="False">
+                                            <Setter Property="Visibility" Value="Visible"/>
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
                             </Button.Style>
                         </Button>
+
                         <Button x:Name="BtnSelectOutputDir"
-                                Content="Sélectionner"
                                 Grid.Column="2"
+                                Content="Sélectionner"
                                 Width="100"
                                 Margin="10 0 0 0"
                                 Click="BtnSelectOutputDir_Click"/>
@@ -232,64 +185,78 @@
             </Border>
         </StackPanel>
 
+        <!-- Index de départ et Nombre d'éléments -->
         <StackPanel Grid.Row="2"
                     Orientation="Horizontal"
                     Margin="0 0 0 20"
                     HorizontalAlignment="Left">
             <StackPanel Margin="0 0 20 0">
-                <TextBlock Text="Index de départ :"
-                           Margin="0 0 0 5"/>
-                <TextBox x:Name="TxtStartIndex"
-                         Width="100"/>
+                <TextBlock Text="Index de départ :" Margin="0 0 0 5"/>
+                <TextBox x:Name="TxtStartIndex" Width="100"/>
             </StackPanel>
             <StackPanel>
-                <TextBlock Text="Nombre d'éléments :"
-                           Margin="0 0 0 5"/>
-                <TextBox x:Name="TxtCount"
-                         Width="100"/>
+                <TextBlock Text="Nombre d'éléments :" Margin="0 0 0 5"/>
+                <TextBox x:Name="TxtCount" Width="100"/>
             </StackPanel>
         </StackPanel>
 
         <Grid Grid.Row="3">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>
+                <!-- Logs -->
                 <RowDefinition Height="Auto"/>
+                <!-- Progression + boutons -->
             </Grid.RowDefinitions>
 
+            <!-- Zone de logs -->
             <Border Grid.Row="0"
-                    BorderBrush="Black"
+                    BorderBrush="#DDD"
                     BorderThickness="1"
                     CornerRadius="5"
-                    Margin="0 0 0 10"
-                    Background="#FFF9F9F9">
+                    Background="#FFF9F9F9"
+                    Padding="5"
+                    Margin="0,0,0,10">
                 <Grid>
-                    <!-- Bouton poubelle -->
-                    <Button Content="🗑️"
-                            FontSize="16"
-                            HorizontalAlignment="Right"
-                            VerticalAlignment="Top"
-                            Margin="5"
-                            Width="30"
-                            Height="30"
-                            Background="Transparent"
-                            BorderThickness="0"
-                            ToolTip="Vider les logs"
-                            Click="ClearLogs_Click"/>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="5"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
 
-                    <!-- Zone de texte avec scrollbar -->
-                    <ScrollViewer VerticalScrollBarVisibility="Auto"
-                                  Margin="0,35,0,0">
+                    <ScrollViewer Grid.Column="0"
+                                  VerticalScrollBarVisibility="Auto"
+                                  Height="120">
                         <TextBox x:Name="TxtLogs"
                                  FontFamily="Consolas"
                                  FontSize="12"
                                  IsReadOnly="True"
                                  TextWrapping="Wrap"
                                  VerticalScrollBarVisibility="Auto"
-                                 AcceptsReturn="True"/>
+                                 AcceptsReturn="True"
+                                 Background="Transparent"
+                                 BorderThickness="0"/>
                     </ScrollViewer>
+
+                    <Border Grid.Column="1"
+                            Width="2"
+                            Margin="5,0"
+                            Background="#888888"/>
+
+                    <Button Grid.Column="2"
+                            Content="🗑️"
+                            FontSize="14"
+                            Width="28"
+                            Height="28"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Top"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            ToolTip="Vider les logs"
+                            Click="ClearLogs_Click"/>
                 </Grid>
             </Border>
 
+            <!-- Progression et boutons -->
             <StackPanel Grid.Row="1"
                         Orientation="Horizontal"
                         HorizontalAlignment="Right"
@@ -306,6 +273,7 @@
                            VerticalAlignment="Center"
                            Visibility="Collapsed"
                            Margin="0 0 10 0"/>
+
                 <Button x:Name="BtnGenerate"
                         Content="Générer"
                         Width="100"

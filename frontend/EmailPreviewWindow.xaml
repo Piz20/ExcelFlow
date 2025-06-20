@@ -9,6 +9,8 @@
 
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+        
+        <!-- Style bouton générique -->
         <Style x:Key="ButtonStyle" TargetType="Button">
             <Setter Property="Margin" Value="5,0"/>
             <Setter Property="Padding" Value="10,5"/>
@@ -19,6 +21,23 @@
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="BorderBrush" Value="#333333"/>
         </Style>
+
+        <!-- Style personnalisé pour le bouton Stop -->
+        <Style x:Key="StopButtonStyle" TargetType="Button" BasedOn="{StaticResource ButtonStyle}">
+            <Setter Property="Background" Value="#8B0000"/> <!-- Rouge foncé par défaut -->
+            <Setter Property="Foreground" Value="White"/>
+            <Style.Triggers>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Background" Value="#FFC0C0"/> <!-- Rouge pâle quand désactivé -->
+                    <Setter Property="Foreground" Value="#660000"/> <!-- Texte rouge foncé -->
+                </Trigger>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#A52A2A"/> <!-- Rouge un peu plus clair au survol -->
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Style DataGridRow (inchangé) -->
         <Style TargetType="DataGridRow">
             <Setter Property="IsSelected" Value="False"/>
             <Style.Triggers>
@@ -34,9 +53,8 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>   <!-- Ligne 0: Sélection -->
             <RowDefinition Height="*"/>      <!-- Ligne 1: DataGrid scrollable -->
-            <!--<RowDefinition Height="Auto"/> Ligne 2 supprimée car fusionnée -->
             <RowDefinition Height="Auto"/>   <!-- Ligne 2: Zone logs -->
-            <RowDefinition Height="Auto"/>   <!-- Ligne 3: Barre de progression + Boutons -->
+            <RowDefinition Height="Auto"/>   <!-- Ligne 3: Boutons -->
         </Grid.RowDefinitions>
 
         <!-- Zone de sélection -->
@@ -134,19 +152,14 @@
                 Padding="5"
                 Margin="0,0,0,10">
             <Grid>
-                <Button Content="🗑️"
-                        FontSize="14"
-                        Width="28"
-                        Height="28"
-                        HorizontalAlignment="Right"
-                        VerticalAlignment="Top"
-                        Background="Transparent"
-                        BorderThickness="0"
-                        ToolTip="Vider les logs"
-                        Click="ClearLogs_Click"/>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="5"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
 
-                <ScrollViewer VerticalScrollBarVisibility="Auto"
-                              Margin="0,35,0,0"
+                <ScrollViewer Grid.Column="0"
+                              VerticalScrollBarVisibility="Auto"
                               Height="120">
                     <TextBox x:Name="TxtLogs"
                              FontFamily="Consolas"
@@ -158,57 +171,44 @@
                              Background="Transparent"
                              BorderThickness="0"/>
                 </ScrollViewer>
+
+                <Border Grid.Column="1"
+                        Width="2"
+                        Margin="5,0"
+                        Background="#888888"/>
+
+                <Button Grid.Column="2"
+                        Content="🗑️"
+                        FontSize="14"
+                        Width="28"
+                        Height="28"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Top"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        ToolTip="Vider les logs"
+                        Click="ClearLogs_Click"/>
             </Grid>
         </Border>
 
-        <!-- Barre de progression + Boutons sur la même ligne -->
-        <Grid Grid.Row="3" Margin="0,10,0,0" VerticalAlignment="Center">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/> <!-- ProgressBar + texte -->
-                <ColumnDefinition Width="*"/>    <!-- Espace flexible -->
-                <ColumnDefinition Width="Auto"/> <!-- Boutons -->
-            </Grid.ColumnDefinitions>
-
-            <!-- Barre de progression + texte -->
-            <StackPanel Orientation="Horizontal" Grid.Column="0" VerticalAlignment="Center">
-                <ProgressBar x:Name="ProgressBar"
-                             Height="20"
-                             Width="300"
-                             Visibility="Collapsed"
-                             Minimum="0"
-                             Maximum="100"
-                             Margin="0,0,10,0"/>
-                <TextBlock x:Name="ProgressTextBlock"
-                           FontSize="14"
-                           FontWeight="Bold"
-                           VerticalAlignment="Center"
-                           Visibility="Collapsed"/>
-            </StackPanel>
-
-            <!-- Espace flexible -->
-            <StackPanel Grid.Column="1"/>
-
-            <!-- Boutons -->
-            <StackPanel Grid.Column="2"
-                        Orientation="Horizontal"
-                        HorizontalAlignment="Right"
-                        VerticalAlignment="Center">
-                <Button x:Name="SendSelectedButton"
-                        Content="Envoyer les emails sélectionnés"
-                        Click="SendSelectedButton_Click"
-                        Style="{StaticResource ButtonStyle}"
-                        Background="#FFFFFF"
-                        Foreground="#000000"/>
-                <Button x:Name="StopButton"
-                        Content="Stop"
-                        Click="StopButton_Click"
-                        Style="{StaticResource ButtonStyle}"
-                        Background="#FF9999"
-                        Foreground="White"
-                        IsEnabled="False"
-                        Margin="10,0,0,0"/>
-            </StackPanel>
-        </Grid>
+        <!-- Ligne boutons uniquement, sans ProgressBar ni texte -->
+        <StackPanel Grid.Row="3"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Center">
+            <Button x:Name="SendSelectedButton"
+                    Content="Envoyer les emails sélectionnés"
+                    Click="SendSelectedButton_Click"
+                    Style="{StaticResource ButtonStyle}"
+                    Background="#FFFFFF"
+                    Foreground="#000000"/>
+            <Button x:Name="StopButton"
+                    Content="Stop"
+                    Click="StopButton_Click"
+                    Style="{StaticResource StopButtonStyle}"
+                    IsEnabled="False"
+                    Margin="10,0,0,0"/>
+        </StackPanel>
 
     </Grid>
 </Window>

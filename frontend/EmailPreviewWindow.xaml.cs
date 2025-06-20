@@ -100,7 +100,7 @@ namespace ExcelFlow
             private string _selectedAttachment;
             public string SelectedAttachment
             {
-                get => _selectedAttachment; // Corrigé pour retourner _selectedAttachment
+                get => _selectedAttachment;
                 set
                 {
                     if (_selectedAttachment != value)
@@ -148,24 +148,15 @@ namespace ExcelFlow
 
         private readonly SendEmailService _sendEmailService;
 
-
-
-
-
-
-
-
-
         public EmailPreviewWindow(List<EmailToSend> preparedEmails)
         {
             InitializeComponent();
-
 
             _hubConnection = new HubConnectionBuilder()
                .WithUrl("https://localhost:7274/partnerFileHub")
                .WithAutomaticReconnect()
                .Build();
-            // Initialise le service avec l'URL de ton backend (ajuste si nécessaire)
+
             _sendEmailService = new SendEmailService("https://localhost:7274");
 
             foreach (var email in preparedEmails)
@@ -178,13 +169,7 @@ namespace ExcelFlow
             EmailsDataGrid.ItemsSource = _emailViewModels;
             UpdateSelectedEmailsCount();
 
-
-
-            // Initialisation des visibilités des éléments de progression
-            ProgressBar.Visibility = Visibility.Collapsed;
-            ProgressTextBlock.Visibility = Visibility.Collapsed;
             TxtLogs.Text = string.Empty;
-
 
             // Configuration des gestionnaires SignalR
             _hubConnection.On<string>("ReceiveMessage", message =>
@@ -197,19 +182,7 @@ namespace ExcelFlow
                 Dispatcher.Invoke(() => AppendLog($"❌ ERREUR: {message}"));
             });
 
-            _hubConnection.On<ProgressUpdate>("ReceiveProgressUpdate", data =>
-            {
-                Dispatcher.Invoke(() =>
-                {
-                    ProgressBar.Visibility = Visibility.Visible;
-                    ProgressTextBlock.Visibility = Visibility.Visible;
-                    ProgressBar.Minimum = 0;
-                    ProgressBar.Maximum = data.Total > 0 ? data.Total : 1;
-                    ProgressBar.Value = data.Current;
-                    ProgressTextBlock.Text = $"{data.Percentage}%";
-                    AppendLog(data.Message ?? "");
-                });
-            });
+            // Suppression du handler ReceiveProgressUpdate
 
             _hubConnection.On<List<PartnerInfo>>("ReceiveIdentifiedPartners", partners =>
             {
@@ -251,12 +224,8 @@ namespace ExcelFlow
                 return Task.CompletedTask;
             };
 
-
             this.Loaded += EmailPreviewWindow_Loaded;
-
-
         }
-
 
         private async void EmailPreviewWindow_Loaded(object sender, RoutedEventArgs e)
         {
@@ -279,6 +248,7 @@ namespace ExcelFlow
                 WpfMsgBox.Show($"Impossible de se connecter au service. Assurez-vous que le backend est en cours d'exécution.\nErreur: {ex.Message}", "Erreur de Connexion", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+
         private void EmailVM_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
             if (e.PropertyName == nameof(EmailToSendViewModel.IsSelected))
@@ -373,7 +343,6 @@ namespace ExcelFlow
                             vm.IsSuccess = true;
                             vm.IsFailure = false;
 
-                            // Logging dans la console
                             Console.WriteLine($"✔ Email envoyé à {result.To}");
                         }
                         else
@@ -381,7 +350,6 @@ namespace ExcelFlow
                             vm.IsSuccess = false;
                             vm.IsFailure = true;
 
-                            // Logging dans la console avec erreur
                             Console.WriteLine($"✘ Échec de l'envoi à {result?.To ?? "inconnu"} : {result?.ErrorMessage ?? "Erreur inconnue"}");
                         }
                     }
@@ -405,7 +373,7 @@ namespace ExcelFlow
                     }
                 }
 
-                // Ici, décocher tous les emails envoyés avec succès
+                // Décocher les emails envoyés avec succès
                 foreach (var vm in toSend)
                 {
                     if (vm.IsSuccess)
@@ -434,25 +402,20 @@ namespace ExcelFlow
             }
         }
 
-
         private void Window_PreviewMouseDown(object sender, MouseButtonEventArgs e)
         {
             var source = e.OriginalSource as DependencyObject;
 
-            // Remonte l'arbre visuel jusqu'à trouver un TextBox, ComboBox, etc.
             while (source != null && !(source is System.Windows.Controls.TextBox) &&
-                   !(source is System.Windows.Controls.ComboBox) &&
-                   !(source is PasswordBox)) // Ajoute d'autres types si nécessaire
+        !(source is System.Windows.Controls.ComboBox) &&
+        !(source is System.Windows.Controls.PasswordBox))
             {
                 source = VisualTreeHelper.GetParent(source);
             }
 
-            // Si aucun contrôle interactif n'a été cliqué, retirer le focus
             if (source == null)
             {
                 Keyboard.ClearFocus();
-
-                // Définir un nouvel élément focalisable invisible pour y mettre le focus
                 FocusManager.SetFocusedElement(this, this);
             }
         }
