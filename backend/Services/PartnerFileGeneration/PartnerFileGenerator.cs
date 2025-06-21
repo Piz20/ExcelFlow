@@ -325,7 +325,7 @@ namespace ExcelFlow.Services
 
                     // Ajout des feuilles supplémentaires
                     LogOnly($"  - Ajout des feuilles supplémentaires pour '{partnerName}'...");
-                    var feuillesAScanner = new List<string> { "Activité nette à J", "J+1", "Regul" };
+                    var feuillesAScanner = new List<string> { "Activité nette à J", "J+1", "Regul", "Distributions" };
                     await AddSupplementarySheetsAsync(worksheet.Workbook, templateWb, partnerName, feuillesAScanner, cancellationToken);
                     LogOnly($"  - Traitement des feuilles supplémentaires terminé pour '{partnerName}'.");
 
@@ -375,65 +375,70 @@ namespace ExcelFlow.Services
         }
 
         public Task AddSupplementarySheetsAsync(
-                XLWorkbook sourceWorkbook,
-                XLWorkbook partnerWorkbook,
-                string partnerName,
-                List<string> feuillesAScanner,
-                CancellationToken cancellationToken = default)
+            XLWorkbook sourceWorkbook,
+            XLWorkbook partnerWorkbook,
+            string partnerName,
+            List<string> feuillesAScanner,
+            CancellationToken cancellationToken = default)
         {
-            LogOnly($"    Début de l'ajout des feuilles supplémentaires pour '{partnerName}'."); // Changement ici
+            LogOnly($"    Début de l'ajout des feuilles supplémentaires pour '{partnerName}'.");
+
             foreach (var feuilleName in feuillesAScanner)
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                LogOnly($"      - Traitement de la feuille '{feuilleName}'..."); // Changement ici
+                LogOnly($"      - Traitement de la feuille '{feuilleName}'...");
                 var sourceSheet = sourceWorkbook.Worksheets
                     .FirstOrDefault(ws => string.Equals(ws.Name.Trim(), feuilleName.Trim(), StringComparison.OrdinalIgnoreCase));
+
                 if (sourceSheet == null)
                 {
-                    LogOnly($"      ❌ Feuille '{feuilleName}' introuvable dans le classeur source. Ignorée."); // Changement ici
+                    LogOnly($"      ❌ Feuille '{feuilleName}' introuvable dans le classeur source. Ignorée.");
                     continue;
                 }
-                LogOnly($"      Feuille source '{feuilleName}' trouvée."); // Changement ici
 
+                LogOnly($"      Feuille source '{feuilleName}' trouvée.");
                 var lastRowUsed = sourceSheet.LastRowUsed();
+
                 if (lastRowUsed == null)
                 {
-                    LogOnly($"      ❌ Feuille '{feuilleName}' est vide. Ignorée."); // Changement ici
+                    LogOnly($"      ❌ Feuille '{feuilleName}' est vide. Ignorée.");
                     continue;
                 }
-                int lastRow = lastRowUsed.RowNumber();
-                LogOnly($"      Feuille '{feuilleName}' a {lastRow} lignes utilisées."); // Changement ici
 
+                int lastRow = lastRowUsed.RowNumber();
+                LogOnly($"      Feuille '{feuilleName}' a {lastRow} lignes utilisées.");
 
                 int lastCol = sourceSheet.LastColumnUsed()?.ColumnNumber() ?? 0;
                 var headerRow = sourceSheet.Row(1);
 
-                int colDistributeur = -1;
+                int colParentReseau = -1;
                 for (int col = 1; col <= lastCol; col++)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                     var cell = headerRow.Cell(col);
-                    if (cell != null && cell.GetString().Trim().Equals("Distributeur", StringComparison.OrdinalIgnoreCase))
+                    if (cell != null && cell.GetString().Trim().Equals("Parent Réseau", StringComparison.OrdinalIgnoreCase))
                     {
-                        colDistributeur = col;
+                        colParentReseau = col;
                         break;
                     }
                 }
 
-                if (colDistributeur == -1)
+                if (colParentReseau == -1)
                 {
-                    LogOnly($"      ❌ Colonne 'Distributeur' introuvable dans la feuille '{feuilleName}'. Ignorée."); // Changement ici
+                    LogOnly($"      ❌ Colonne 'Parent Réseau' introuvable dans la feuille '{feuilleName}'. Ignorée.");
                     continue;
                 }
-                LogOnly($"      Colonne 'Distributeur' trouvée à l'index {colDistributeur} dans '{feuilleName}'."); // Changement ici
+
+                LogOnly($"      Colonne 'Parent Réseau' trouvée à l'index {colParentReseau} dans '{feuilleName}'.");
 
                 var matchedRows = new List<IXLRow>();
-                LogOnly($"      Recherche des lignes pour '{partnerName}' dans la feuille '{feuilleName}'..."); // Changement ici
+                LogOnly($"      Recherche des lignes pour '{partnerName}' dans la feuille '{feuilleName}'...");
+
                 for (int row = 2; row <= lastRow; row++)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
-                    var cell = sourceSheet.Cell(row, colDistributeur);
+                    var cell = sourceSheet.Cell(row, colParentReseau);
                     if (cell?.GetString().Trim().Equals(partnerName, StringComparison.OrdinalIgnoreCase) == true)
                     {
                         matchedRows.Add(sourceSheet.Row(row));
@@ -442,32 +447,31 @@ namespace ExcelFlow.Services
 
                 if (matchedRows.Count == 0)
                 {
-                    LogOnly($"      Aucune ligne trouvée pour le partenaire '{partnerName}' dans la feuille '{feuilleName}'."); // Changement ici
+                    LogOnly($"      Aucune ligne trouvée pour le partenaire '{partnerName}' dans la feuille '{feuilleName}'.");
                     continue;
                 }
-                LogOnly($"      {matchedRows.Count} lignes trouvées pour '{partnerName}' dans la feuille '{feuilleName}'."); // Changement ici
 
+                LogOnly($"      {matchedRows.Count} lignes trouvées pour '{partnerName}' dans la feuille '{feuilleName}'.");
 
-                // Vérifier si la feuille existe déjà dans le classeur partenaire
                 if (partnerWorkbook.Worksheets.Any(ws => ws.Name == feuilleName))
                 {
                     if (feuilleName.Equals("Activité nette à J", StringComparison.OrdinalIgnoreCase))
                     {
                         var sheetToDelete = partnerWorkbook.Worksheet(feuilleName);
                         partnerWorkbook.Worksheets.Delete(sheetToDelete.Name);
-                        LogOnly($"      La feuille existante '{feuilleName}' a été supprimée pour être remplacée pour '{partnerName}'."); // Changement ici
+                        LogOnly($"      La feuille existante '{feuilleName}' a été supprimée pour être remplacée pour '{partnerName}'.");
                     }
                     else
                     {
-                        LogOnly($"      La feuille '{feuilleName}' existe déjà pour '{partnerName}', elle ne sera pas ajoutée pour éviter les doublons."); // Changement ici
+                        LogOnly($"      La feuille '{feuilleName}' existe déjà pour '{partnerName}', elle ne sera pas ajoutée pour éviter les doublons.");
                         continue;
                     }
                 }
 
-                LogOnly($"      Ajout de la nouvelle feuille '{feuilleName}' au classeur partenaire..."); // Changement ici
+                LogOnly($"      Ajout de la nouvelle feuille '{feuilleName}' au classeur partenaire...");
                 var newSheet = partnerWorkbook.AddWorksheet(feuilleName);
 
-                LogOnly("      Copie de l'en-tête de la feuille..."); // Changement ici
+                LogOnly("      Copie de l'en-tête de la feuille...");
                 for (int col = 1; col <= lastCol; col++)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
@@ -476,10 +480,11 @@ namespace ExcelFlow.Services
                     destCell.Value = sourceCell.Value;
                     destCell.Style = sourceCell.Style;
                 }
-                LogOnly("      En-tête copié."); // Changement ici
 
+                LogOnly("      En-tête copié.");
                 int currentRow = 2;
-                LogOnly($"      Copie des {matchedRows.Count} lignes correspondantes..."); // Changement ici
+
+                LogOnly($"      Copie des {matchedRows.Count} lignes correspondantes...");
                 foreach (var row in matchedRows)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
@@ -499,19 +504,29 @@ namespace ExcelFlow.Services
                     }
                     currentRow++;
                 }
-                LogOnly("      Lignes de données copiées."); // Changement ici
 
+                LogOnly("      Lignes de données copiées.");
                 newSheet.Columns().AdjustToContents();
-                LogOnly("  - Toutes les colonnes ont été définies à une largeur de 20.");
+                LogOnly("  - Toutes les colonnes ont été ajustées automatiquement.");
 
-                // Appliquer la police "Calibri", taille 10 à toute la feuille
                 newSheet.Style.Font.FontName = "Calibri";
                 newSheet.Style.Font.FontSize = 10;
 
-                LogOnly($"      ✅ Feuille '{feuilleName}' ajoutée et ajustée pour le partenaire '{partnerName}' avec {matchedRows.Count} lignes de données."); // Changement ici
+                // Si on est dans la feuille "Distributions", augmenter encore la largeur de toutes les colonnes
+                if (feuilleName.Equals("Distributions", StringComparison.OrdinalIgnoreCase))
+                {
+                    foreach (var column in newSheet.ColumnsUsed())
+                    {
+                        column.Width += 8;  // Augmente la largeur par 8 unités (à ajuster selon besoin)
+                    }
+                }
+
+                LogOnly($"      ✅ Feuille '{feuilleName}' ajoutée et ajustée pour le partenaire '{partnerName}' avec {matchedRows.Count} lignes de données.");
             }
-            LogOnly("    Fin de l'ajout des feuilles supplémentaires."); // Changement ici
+
+            LogOnly("    Fin de l'ajout des feuilles supplémentaires.");
             return Task.CompletedTask;
         }
+
     }
 }

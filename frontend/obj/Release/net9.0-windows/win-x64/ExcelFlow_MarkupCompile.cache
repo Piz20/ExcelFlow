@@ -10,11 +10,11 @@ none
 false
 TRACE;RELEASE;NET;NET9_0;NETCOREAPP;WINDOWS;WINDOWS7_0;NET5_0_OR_GREATER;NET6_0_OR_GREATER;NET7_0_OR_GREATER;NET8_0_OR_GREATER;NET9_0_OR_GREATER;NETCOREAPP3_0_OR_GREATER;NETCOREAPP3_1_OR_GREATER;WINDOWS7_0_OR_GREATER
 C:\Users\p.eminiant\Desktop\PROJETS\ExcelFlow\frontend\App.xaml
-4-1847944517
+51872319353
 
-17155715688
+1925567452
 228-1964862810
-MainWindow.xaml;Views\GenerationView.xaml;Views\SendEmailView.xaml;Views\SmtpSettingsView.xaml;
+EmailPreviewWindow.xaml;MainWindow.xaml;Views\GenerationView.xaml;Views\SendEmailView.xaml;Views\SmtpSettingsView.xaml;
 
 False
 

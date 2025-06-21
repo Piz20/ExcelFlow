@@ -10,10 +10,10 @@
     "OutputDir": "C:\\Users\\p.eminiant\\Desktop\\UTILE\\BESOIN BACK-OFFICE\\FICHIERS GENERES"
   },
   "SendEmail": {
-    "PartnerEmailFilePath": null,
-    "GeneratedFilesFolderPath": null,
-    "FromDisplayName": null,
-    "CcRecipients": null,
-    "BccRecipients": null
+    "PartnerEmailFilePath": "C:\\Users\\p.eminiant\\Desktop\\UTILE\\BESOIN BACK-OFFICE\\MAILS DES PARTENAIRES.xlsx",
+    "GeneratedFilesFolderPath": "C:\\Users\\p.eminiant\\Desktop\\UTILE\\BESOIN BACK-OFFICE\\FICHIERS GENERES",
+    "FromDisplayName": "WAFACASH CENTRAL AFRICA",
+    "CcRecipients": "",
+    "BccRecipients": ""
   }
 }
