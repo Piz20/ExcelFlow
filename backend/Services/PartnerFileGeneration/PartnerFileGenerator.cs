@@ -271,7 +271,7 @@ namespace ExcelFlow.Services
             }
 
             await AddSupplementarySheetsAsync(worksheet.Workbook, templateWb, partnerName,
-                new List<string> { "Activité nette à J", "J+1", "Regul", "Distributions" }, cancellationToken);
+                new List<string> { "Activité nette à J", "J+1", "Regul", "TTA DISTRIBUTIONS" }, cancellationToken);
 
             string safePartnerName = string.Concat(partnerName.Split(Path.GetInvalidFileNameChars()));
             string dateRange = (dateStrmin == dateStrmax) ? dateStrmin : $"{dateStrmin} au {dateStrmax}";
@@ -448,8 +448,8 @@ namespace ExcelFlow.Services
                 newSheet.Style.Font.FontName = "Calibri";
                 newSheet.Style.Font.FontSize = 10;
 
-                // Si on est dans la feuille "Distributions", augmenter encore la largeur de toutes les colonnes
-                if (feuilleName.Equals("Distributions", StringComparison.OrdinalIgnoreCase))
+                // Si on est dans la feuille "TTA DISTRIBUTIONS", augmenter encore la largeur de toutes les colonnes
+                if (feuilleName.Equals("TTA DISTRIBUTIONS", StringComparison.OrdinalIgnoreCase))
                 {
                     foreach (var column in newSheet.ColumnsUsed())
                     {

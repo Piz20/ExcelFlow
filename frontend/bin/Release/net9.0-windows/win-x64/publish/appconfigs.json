@@ -1,17 +1,17 @@
 {
   "Smtp": {
-    "SmtpHost": "paris.wafacash.cm",
-    "SmtpPort": 587,
-    "SmtpFromEmail": "p.eminiant@wafacash.cm"
+    "SmtpHost": null,
+    "SmtpPort": null,
+    "SmtpFromEmail": null
   },
   "Generation": {
-    "SourcePath": null,
-    "TemplatePath": null,
-    "OutputDir": null
+    "SourcePath": "C:\\Users\\p.eminiant\\Desktop\\UTILE\\BESOIN BACK-OFFICE\\ELEMENTS UTILISES POUR LE DEVELOPPEMENT\\FICHIERS SOURES DEJA TRAITES\\Analyse de solde partenaire du 13 06 au 15 06 2025.xlsx",
+    "TemplatePath": "C:\\Users\\p.eminiant\\Desktop\\UTILE\\BESOIN BACK-OFFICE\\ELEMENTS UTILISES POUR LE DEVELOPPEMENT\\FICHIER TEMPLATE.xlsx",
+    "OutputDir": "C:\\Users\\p.eminiant\\Desktop\\UTILE\\BESOIN BACK-OFFICE\\ELEMENTS UTILISES POUR LE DEVELOPPEMENT\\FICHIERS GENERES"
   },
   "SendEmail": {
-    "PartnerEmailFilePath": "C:\\Users\\p.eminiant\\Desktop\\UTILE\\BESOIN BACK-OFFICE\\MAILS DES PARTENAIRES.xlsx",
-    "GeneratedFilesFolderPath": "C:\\Users\\p.eminiant\\Desktop\\UTILE\\BESOIN BACK-OFFICE\\FICHIERS GENERES",
+    "PartnerEmailFilePath": "C:\\Users\\p.eminiant\\Desktop\\UTILE\\BESOIN BACK-OFFICE\\ELEMENTS UTILISES POUR LE DEVELOPPEMENT\\MAILS DES PARTENAIRES.xlsx",
+    "GeneratedFilesFolderPath": "C:\\Users\\p.eminiant\\Desktop\\UTILE\\BESOIN BACK-OFFICE\\ELEMENTS UTILISES POUR LE DEVELOPPEMENT\\FICHIERS GENERES",
     "FromDisplayName": "",
     "CcRecipients": "",
     "BccRecipients": ""
