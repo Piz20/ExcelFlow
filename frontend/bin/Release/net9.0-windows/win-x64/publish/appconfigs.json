@@ -5,14 +5,14 @@
     "SmtpFromEmail": "p.eminiant@wafacash.cm"
   },
   "Generation": {
-    "SourcePath": "C:\\Users\\p.eminiant\\Desktop\\UTILE\\BESOIN BACK-OFFICE\\FICHIERS SOURES DEJA TRAITES\\Analyse de solde partenaire du 11 06 2025.xlsx",
-    "TemplatePath": "C:\\Users\\p.eminiant\\Desktop\\UTILE\\BESOIN BACK-OFFICE\\FICHIER TEMPLATE.xlsx",
-    "OutputDir": "C:\\Users\\p.eminiant\\Desktop\\UTILE\\BESOIN BACK-OFFICE\\FICHIERS GENERES"
+    "SourcePath": null,
+    "TemplatePath": null,
+    "OutputDir": null
   },
   "SendEmail": {
     "PartnerEmailFilePath": "C:\\Users\\p.eminiant\\Desktop\\UTILE\\BESOIN BACK-OFFICE\\MAILS DES PARTENAIRES.xlsx",
     "GeneratedFilesFolderPath": "C:\\Users\\p.eminiant\\Desktop\\UTILE\\BESOIN BACK-OFFICE\\FICHIERS GENERES",
-    "FromDisplayName": "WAFACASH CENTRAL AFRICA",
+    "FromDisplayName": "",
     "CcRecipients": "",
     "BccRecipients": ""
   }

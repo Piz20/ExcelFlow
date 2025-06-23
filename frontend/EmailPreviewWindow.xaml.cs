@@ -266,7 +266,7 @@ namespace ExcelFlow
                 return;
 
             int selectedCount = _emailViewModels.Count(vm => vm.IsSelected);
-            SelectedEmailsCountTextBlock.Text = $"Emails sélectionnés : {selectedCount}";
+            SelectedEmailsCountTextBlock.Text = $"Partenaires sélectionnés : {selectedCount}";
 
             if (SelectAllCheckBox == null)
                 return;
