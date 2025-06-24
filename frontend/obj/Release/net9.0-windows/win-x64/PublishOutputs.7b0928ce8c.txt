@@ -1,7 +1,0 @@
-C:\Users\p.eminiant\Desktop\ExcelFlow\frontend\publish\ExcelFlow.pdb
-C:\Users\p.eminiant\Desktop\ExcelFlow\frontend\publish\D3DCompiler_47_cor3.dll
-C:\Users\p.eminiant\Desktop\ExcelFlow\frontend\publish\PenImc_cor3.dll
-C:\Users\p.eminiant\Desktop\ExcelFlow\frontend\publish\PresentationNative_cor3.dll
-C:\Users\p.eminiant\Desktop\ExcelFlow\frontend\publish\vcruntime140_cor3.dll
-C:\Users\p.eminiant\Desktop\ExcelFlow\frontend\publish\wpfgfx_cor3.dll
-C:\Users\p.eminiant\Desktop\ExcelFlow\frontend\publish\ExcelFlow.exe
