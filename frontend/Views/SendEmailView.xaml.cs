@@ -51,9 +51,9 @@ namespace ExcelFlow.Views
 
             _appConfig = config;
 
-            _sendEmailService = new SendEmailService("https://localhost:7274");
+            _sendEmailService = new SendEmailService($"http://localhost:{AppConstants.port}");
             _hubConnection = new HubConnectionBuilder()
-                .WithUrl("https://localhost:7274/partnerFileHub")
+                .WithUrl($"http://localhost:{AppConstants.port}/partnerFileHub")
                 .WithAutomaticReconnect()
                 .Build();
 
@@ -284,7 +284,8 @@ namespace ExcelFlow.Views
                 }
 
                 var previewWindow = new EmailPreviewWindow(preparedEmails);
-                previewWindow.ShowDialog();
+                previewWindow.Show(); // Non bloquant, la fenêtre parente reste active
+
             }
             catch (Exception ex)
             {

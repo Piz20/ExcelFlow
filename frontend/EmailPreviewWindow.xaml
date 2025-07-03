@@ -9,41 +9,67 @@
 
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
-        
+
         <!-- Style bouton générique -->
-        <Style x:Key="ButtonStyle" TargetType="Button">
-            <Setter Property="Margin" Value="5,0"/>
-            <Setter Property="Padding" Value="10,5"/>
-            <Setter Property="MinWidth" Value="150"/>
-            <Setter Property="Height" Value="30"/>
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="BorderBrush" Value="#333333"/>
+        <Style x:Key="ButtonStyle"
+                TargetType="Button">
+            <Setter Property="Margin"
+                    Value="5,0"/>
+            <Setter Property="Padding"
+                    Value="10,5"/>
+            <Setter Property="MinWidth"
+                    Value="150"/>
+            <Setter Property="Height"
+                    Value="30"/>
+            <Setter Property="FontSize"
+                    Value="13"/>
+            <Setter Property="FontWeight"
+                    Value="SemiBold"/>
+            <Setter Property="BorderThickness"
+                    Value="1"/>
+            <Setter Property="BorderBrush"
+                    Value="#333333"/>
         </Style>
 
         <!-- Style personnalisé pour le bouton Stop -->
-        <Style x:Key="StopButtonStyle" TargetType="Button" BasedOn="{StaticResource ButtonStyle}">
-            <Setter Property="Background" Value="#8B0000"/> <!-- Rouge foncé par défaut -->
-            <Setter Property="Foreground" Value="White"/>
+        <Style x:Key="StopButtonStyle"
+                TargetType="Button"
+                BasedOn="{StaticResource ButtonStyle}">
+            <Setter Property="Background"
+                    Value="#8B0000"/>
+            <!-- Rouge foncé par défaut -->
+            <Setter Property="Foreground"
+                    Value="White"/>
             <Style.Triggers>
-                <Trigger Property="IsEnabled" Value="False">
-                    <Setter Property="Background" Value="#FFC0C0"/> <!-- Rouge pâle quand désactivé -->
-                    <Setter Property="Foreground" Value="#660000"/> <!-- Texte rouge foncé -->
+                <Trigger Property="IsEnabled"
+                        Value="False">
+                    <Setter Property="Background"
+                            Value="#FFC0C0"/>
+                    <!-- Rouge pâle quand désactivé -->
+                    <Setter Property="Foreground"
+                            Value="#660000"/>
+                    <!-- Texte rouge foncé -->
                 </Trigger>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#A52A2A"/> <!-- Rouge un peu plus clair au survol -->
+                <Trigger Property="IsMouseOver"
+                        Value="True">
+                    <Setter Property="Background"
+                            Value="#A52A2A"/>
+                    <!-- Rouge un peu plus clair au survol -->
                 </Trigger>
             </Style.Triggers>
         </Style>
 
         <!-- Style DataGridRow (inchangé) -->
         <Style TargetType="DataGridRow">
-            <Setter Property="IsSelected" Value="False"/>
+            <Setter Property="IsSelected"
+                    Value="False"/>
             <Style.Triggers>
-                <Trigger Property="IsSelected" Value="True">
-                    <Setter Property="Background" Value="Transparent"/>
-                    <Setter Property="BorderBrush" Value="Transparent"/>
+                <Trigger Property="IsSelected"
+                        Value="True">
+                    <Setter Property="Background"
+                            Value="Transparent"/>
+                    <Setter Property="BorderBrush"
+                            Value="Transparent"/>
                 </Trigger>
             </Style.Triggers>
         </Style>
@@ -51,14 +77,22 @@
 
     <Grid Margin="10">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>   <!-- Ligne 0: Sélection -->
-            <RowDefinition Height="*"/>      <!-- Ligne 1: DataGrid scrollable -->
-            <RowDefinition Height="Auto"/>   <!-- Ligne 2: Zone logs -->
-            <RowDefinition Height="Auto"/>   <!-- Ligne 3: Boutons -->
+            <RowDefinition Height="Auto"/>
+            <!-- Ligne 0: Sélection -->
+            <RowDefinition Height="*"/>
+            <!-- Ligne 1: DataGrid étirable -->
+            <RowDefinition Height="5"/>
+            <!-- Ligne 2: Splitter -->
+            <RowDefinition Height="200"/>
+            <!-- Ligne 3: Logs (initialement fixe) -->
+            <RowDefinition Height="Auto"/>
+            <!-- Ligne 4: Boutons -->
         </Grid.RowDefinitions>
 
         <!-- Zone de sélection -->
-        <StackPanel Orientation="Horizontal" Grid.Row="0" Margin="0,0,0,10">
+        <StackPanel Orientation="Horizontal"
+                Grid.Row="0"
+                Margin="0,0,0,10">
             <CheckBox x:Name="SelectAllCheckBox"
                       Content="Tout sélectionner"
                       Click="SelectAllCheckBox_Click"
@@ -72,79 +106,91 @@
                        Margin="10,0,0,0"/>
         </StackPanel>
 
-        <!-- Zone scrollable pour DataGrid -->
-        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-            <DataGrid x:Name="EmailsDataGrid"
-                      AutoGenerateColumns="False"
-                      CanUserAddRows="False"
-                      SelectionMode="Single"
-                      SelectionUnit="Cell"
-                      HeadersVisibility="Column"
-                      IsReadOnly="True"
-                      RowHeight="40"
-                      MaxHeight="450"
-                      MinHeight="200">
+        <!-- DataGrid scrollable sans ScrollViewer supplémentaire -->
+        <DataGrid Grid.Row="1"
+                  x:Name="EmailsDataGrid"
+                  AutoGenerateColumns="False"
+                  CanUserAddRows="False"
+                  SelectionMode="Single"
+                  SelectionUnit="Cell"
+                  HeadersVisibility="Column"
+                  IsReadOnly="True"
+                  RowHeight="40"
+                  MaxHeight="600"
+                  MinHeight="100">
+            <DataGrid.Columns>
+                <DataGridCheckBoxColumn Header=""
+                                        Binding="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                        Width="40"
+                                        ElementStyle="{StaticResource {x:Type CheckBox}}"/>
+                <DataGridTemplateColumn Header="Partenaire"
+                        Width="200">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <ComboBox ItemsSource="{Binding PartnerNameList}"
+                                      SelectedItem="{Binding SelectedPartner, Mode=TwoWay}"
+                                      IsEditable="False"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="Fichier à envoyer"
+                        Width="*">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <ComboBox ItemsSource="{Binding AttachmentFilePaths}"
+                                      SelectedItem="{Binding SelectedAttachment, Mode=TwoWay}"
+                                      IsEditable="False"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="Destinataires"
+                        Width="250">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <ComboBox ItemsSource="{Binding ToRecipients}"
+                                      SelectedItem="{Binding SelectedRecipient, Mode=TwoWay}"
+                                      IsEditable="False"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="Statut"
+                        Width="100">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel HorizontalAlignment="Center">
+                                <ProgressBar Width="50"
+                                             Height="8"
+                                             IsIndeterminate="True"
+                                             Visibility="{Binding IsSending, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                                <TextBlock Text="✔"
+                                           Foreground="Green"
+                                           FontWeight="Bold"
+                                           FontSize="16"
+                                           Visibility="{Binding IsSuccess, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                                <TextBlock Text="❌"
+                                           Foreground="Red"
+                                           FontWeight="Bold"
+                                           FontSize="16"
+                                           Visibility="{Binding IsFailure, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+        </DataGrid>
 
-                <DataGrid.Columns>
-                    <DataGridCheckBoxColumn Header=""
-                                            Binding="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                            Width="40"
-                                            ElementStyle="{StaticResource {x:Type CheckBox}}"/>
-                    <DataGridTemplateColumn Header="Partenaire" Width="200">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <ComboBox ItemsSource="{Binding PartnerNameList}"
-                                          SelectedItem="{Binding SelectedPartner, Mode=TwoWay}"
-                                          IsEditable="False"/>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Header="Fichier à envoyer" Width="*">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <ComboBox ItemsSource="{Binding AttachmentFilePaths}"
-                                          SelectedItem="{Binding SelectedAttachment, Mode=TwoWay}"
-                                          IsEditable="False"/>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Header="Destinataires" Width="250">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <ComboBox ItemsSource="{Binding ToRecipients}"
-                                          SelectedItem="{Binding SelectedRecipient, Mode=TwoWay}"
-                                          IsEditable="False"/>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Header="Statut" Width="100">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <StackPanel HorizontalAlignment="Center">
-                                    <ProgressBar Width="50"
-                                                 Height="8"
-                                                 IsIndeterminate="True"
-                                                 Visibility="{Binding IsSending, Converter={StaticResource BoolToVisibilityConverter}}"/>
-                                    <TextBlock Text="✔"
-                                               Foreground="Green"
-                                               FontWeight="Bold"
-                                               FontSize="16"
-                                               Visibility="{Binding IsSuccess, Converter={StaticResource BoolToVisibilityConverter}}"/>
-                                    <TextBlock Text="❌"
-                                               Foreground="Red"
-                                               FontWeight="Bold"
-                                               FontSize="16"
-                                               Visibility="{Binding IsFailure, Converter={StaticResource BoolToVisibilityConverter}}"/>
-                                </StackPanel>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                </DataGrid.Columns>
-            </DataGrid>
-        </ScrollViewer>
+        <!-- GridSplitter -->
+        <GridSplitter Grid.Row="2"
+                      Height="5"
+                      HorizontalAlignment="Stretch"
+                      VerticalAlignment="Center"
+                      Background="#888888"
+                      ShowsPreview="True"
+                      ResizeDirection="Rows"
+                      ResizeBehavior="PreviousAndNext"/>
 
-        <!-- Zone de logs -->
-        <Border Grid.Row="2"
+        <!-- Zone logs -->
+        <Border Grid.Row="3"
                 BorderBrush="#DDD"
                 BorderThickness="1"
                 CornerRadius="5"
@@ -154,30 +200,22 @@
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="5"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
                 <ScrollViewer Grid.Column="0"
-                              VerticalScrollBarVisibility="Auto"
-                              Height="120">
+                              VerticalScrollBarVisibility="Auto">
                     <TextBox x:Name="TxtLogs"
                              FontFamily="Consolas"
                              FontSize="12"
                              IsReadOnly="True"
                              TextWrapping="Wrap"
-                             VerticalScrollBarVisibility="Auto"
                              AcceptsReturn="True"
                              Background="Transparent"
                              BorderThickness="0"/>
                 </ScrollViewer>
 
-                <Border Grid.Column="1"
-                        Width="2"
-                        Margin="5,0"
-                        Background="#888888"/>
-
-                <Button Grid.Column="2"
+                <Button Grid.Column="1"
                         Content="🗑️"
                         FontSize="14"
                         Width="28"
@@ -191,8 +229,8 @@
             </Grid>
         </Border>
 
-        <!-- Ligne boutons uniquement, sans ProgressBar ni texte -->
-        <StackPanel Grid.Row="3"
+        <!-- Ligne boutons -->
+        <StackPanel Grid.Row="4"
                     Orientation="Horizontal"
                     HorizontalAlignment="Right"
                     VerticalAlignment="Center">
@@ -209,6 +247,6 @@
                     IsEnabled="False"
                     Margin="10,0,0,0"/>
         </StackPanel>
-
     </Grid>
+
 </Window>

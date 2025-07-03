@@ -59,10 +59,15 @@
     <Grid Margin="10">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
+            <!-- Titre -->
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
+            <!-- Formulaire -->
+            <RowDefinition Height="5"/>
+            <!-- Splitter -->
             <RowDefinition Height="*"/>
+            <!-- Logs + progression étirables -->
         </Grid.RowDefinitions>
+
 
         <TextBlock Grid.Row="0"
                    Text="ExcelFlow - Envoi d'Emails aux Partenaires"
@@ -311,15 +316,25 @@
             </Border>
         </StackPanel>
 
+        <!-- GridSplitter -->
+        <GridSplitter Grid.Row="2"
+                      Height="5"
+                      HorizontalAlignment="Stretch"
+                      VerticalAlignment="Center"
+                      Background="#888888"
+                      ShowsPreview="True"
+                      ResizeDirection="Rows"
+                      ResizeBehavior="PreviousAndNext"/>
+
+
+        <!-- Zone Logs + Progression -->
         <Grid Grid.Row="3">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>
-                <!-- Logs -->
                 <RowDefinition Height="Auto"/>
-                <!-- Progression + boutons -->
             </Grid.RowDefinitions>
 
-            <!-- Zone de logs -->
+            <!-- Logs -->
             <Border Grid.Row="0"
                     BorderBrush="#DDD"
                     BorderThickness="1"
@@ -330,30 +345,23 @@
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="5"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
                     <ScrollViewer Grid.Column="0"
                                   VerticalScrollBarVisibility="Auto"
-                                  Height="120">
+                                  HorizontalScrollBarVisibility="Disabled">
                         <TextBox x:Name="TxtLogs"
                                  FontFamily="Consolas"
                                  FontSize="12"
                                  IsReadOnly="True"
                                  TextWrapping="Wrap"
-                                 VerticalScrollBarVisibility="Auto"
                                  AcceptsReturn="True"
                                  Background="Transparent"
                                  BorderThickness="0"/>
                     </ScrollViewer>
 
-                    <Border Grid.Column="1"
-                            Width="2"
-                            Margin="5,0"
-                            Background="#888888"/>
-
-                    <Button Grid.Column="2"
+                    <Button Grid.Column="1"
                             Content="🗑️"
                             FontSize="14"
                             Width="28"
@@ -367,7 +375,7 @@
                 </Grid>
             </Border>
 
-            <!-- Progression et boutons -->
+            <!-- Progression + boutons -->
             <StackPanel Grid.Row="1"
                         Orientation="Horizontal"
                         HorizontalAlignment="Right"
@@ -407,6 +415,5 @@
                         Click="CancelSendingButton_Click"/>
             </StackPanel>
         </Grid>
-
     </Grid>
 </UserControl>

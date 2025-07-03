@@ -10,7 +10,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using Microsoft.AspNetCore.SignalR.Client;
-
+using ExcelFlow.Utilities;
 using ExcelFlow.Services;
 using ExcelFlow.Models;
 using WpfMsgBox = System.Windows.MessageBox;
@@ -154,11 +154,11 @@ namespace ExcelFlow
             InitializeComponent();
 
             _hubConnection = new HubConnectionBuilder()
-               .WithUrl("https://localhost:7274/partnerFileHub")
+               .WithUrl($"http://localhost:{AppConstants.port}/partnerFileHub")
                .WithAutomaticReconnect()
                .Build();
 
-            _sendEmailService = new SendEmailService("https://localhost:7274");
+            _sendEmailService = new SendEmailService($"http://localhost:{AppConstants.port}");
 
             foreach (var email in preparedEmails)
             {

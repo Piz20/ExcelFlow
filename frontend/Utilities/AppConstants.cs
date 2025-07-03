@@ -7,6 +7,6 @@ namespace ExcelFlow.Utilities // Vous pouvez ajuster le namespace si vous préf�
         // Constante pour le nom d'affichage par défaut de l'expéditeur
         public const string DefaultFromDisplayName = "WAFACASH CENTRAL AFRICA";
 
-        
+        public const string port = "5297"; // Port HTTP pour l'application
     }
 }

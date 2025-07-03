@@ -37,10 +37,10 @@ namespace ExcelFlow.Views
             TxtTemplateFilePath.Text = _appConfig.Generation.TemplatePath ?? "";
             TxtOutputDir.Text = _appConfig.Generation.OutputDir ?? "";
 
-            _generationService = new GenerationService("http://localhost:5297");
+            _generationService = new GenerationService($"http://localhost:{AppConstants.port}");
 
             _hubConnection = new HubConnectionBuilder()
-                .WithUrl("http://localhost:5297/partnerFileHub")
+                .WithUrl($"http://localhost:{AppConstants.port}/partnerFileHub")
                 .WithAutomaticReconnect()
                 .Build();
 
