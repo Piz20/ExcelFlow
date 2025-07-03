@@ -183,31 +183,7 @@ namespace ExcelFlow
                 Dispatcher.Invoke(() => AppendLog($"❌ ERREUR: {message}"));
             });
 
-            // Suppression du handler ReceiveProgressUpdate
 
-            _hubConnection.On<List<PartnerInfo>>("ReceiveIdentifiedPartners", partners =>
-            {
-                Dispatcher.Invoke(() =>
-                {
-                    AppendLog($"Reçu {partners.Count} partenaires identifiés.");
-                });
-            });
-
-            _hubConnection.On<SentEmailSummary>("ReceiveSentEmailSummary", summary =>
-            {
-                Dispatcher.Invoke(() =>
-                {
-                    AppendLog($"Email envoyé : '{summary.FileName}' à '{summary.PartnerName}'.");
-                });
-            });
-
-            _hubConnection.On<int>("ReceiveTotalFilesCount", totalFiles =>
-            {
-                Dispatcher.Invoke(() =>
-                {
-                    AppendLog($"Total de fichiers détectés : {totalFiles}.");
-                });
-            });
 
             _hubConnection.Reconnected += (sender) =>
             {
@@ -320,7 +296,6 @@ namespace ExcelFlow
 
             _cts = new CancellationTokenSource();
 
-            // Désactiver UI au début
             EmailsDataGrid.IsEnabled = false;
             SelectAllCheckBox.IsEnabled = false;
             SendSelectedButton.IsEnabled = false;
@@ -328,8 +303,12 @@ namespace ExcelFlow
 
             try
             {
-                foreach (var vm in toSend)
+                for (int i = 0; i < toSend.Count; i++)
                 {
+                    var vm = toSend[i];
+
+                    AppendLog($"\n\n📤 Envoi de l'email {i + 1}/{toSend.Count} à : {string.Join(", ", vm.Email.ToRecipients)}");
+
                     vm.IsSending = true;
                     vm.IsSuccess = false;
                     vm.IsFailure = false;
@@ -338,22 +317,17 @@ namespace ExcelFlow
                     {
                         var singleEmailList = new List<EmailToSend> { vm.Email };
                         var results = await _sendEmailService.SendPreparedEmailsAsync(singleEmailList, _cts.Token);
-
                         var result = results.FirstOrDefault();
 
                         if (result != null && result.Success)
                         {
                             vm.IsSuccess = true;
                             vm.IsFailure = false;
-
-                            Console.WriteLine($"✔ Email envoyé à {result.To}");
                         }
                         else
                         {
                             vm.IsSuccess = false;
                             vm.IsFailure = true;
-
-                            Console.WriteLine($"✘ Échec de l'envoi à {result?.To ?? "inconnu"} : {result?.ErrorMessage ?? "Erreur inconnue"}");
                         }
                     }
                     catch (OperationCanceledException)
@@ -361,14 +335,12 @@ namespace ExcelFlow
                         vm.IsSending = false;
                         vm.IsSuccess = false;
                         vm.IsFailure = false;
-                        Console.WriteLine("⏹️ Envoi annulé par l'utilisateur.");
                         throw;
                     }
                     catch (Exception ex)
                     {
                         vm.IsSuccess = false;
                         vm.IsFailure = true;
-                        Console.WriteLine($"✘ Exception lors de l'envoi : {ex.Message}");
                     }
                     finally
                     {
@@ -376,7 +348,6 @@ namespace ExcelFlow
                     }
                 }
 
-                // Décocher les emails envoyés avec succès
                 foreach (var vm in toSend)
                 {
                     if (vm.IsSuccess)

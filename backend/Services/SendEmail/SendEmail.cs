@@ -129,7 +129,7 @@ namespace ExcelFlow.Services
                         cancellationToken.ThrowIfCancellationRequested();
                         if (File.Exists(filePath))
                         {
-                            await LogAndSend($"Attaching file: {Path.GetFileName(filePath)}", cancellationToken);
+                            await LogAndSend($"Attachement de la piece jointe : {Path.GetFileName(filePath)}", cancellationToken);
                             await bodyBuilder.Attachments.AddAsync(filePath);
                         }
                         else

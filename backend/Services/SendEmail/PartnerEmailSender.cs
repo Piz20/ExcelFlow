@@ -61,111 +61,10 @@ public class PartnerEmailSender : IPartnerEmailSender
         }
     }
 
-    // Helper pour envoyer des mises à jour de progression structurées directement
-    // et EN PLUS, un log formaté du pourcentage.
-    private async Task SendProgressToFrontend(int current, int total, string message, CancellationToken cancellationToken = default)
-    {
-        var progress = new ProgressUpdate
-        {
-            Current = current,
-            Total = total,
-            Percentage = total > 0 ? (int)((double)current / total * 100) : 0,
-            Message = message
-        };
-
-        // 1. Envoyer l'objet ProgressUpdate structuré pour la barre de progression/UI
-        if (_hubContext != null)
-        {
-            await _hubContext.Clients.All.SendAsync("ReceiveProgressUpdate", progress, cancellationToken);
-        }
-
-        // 2. Envoyer une ligne de log séparée avec le pourcentage formaté
-        string percentageLine = $"----------------------------------------------{progress.Percentage}%";
-        await LogAndSend(percentageLine, cancellationToken); // Utilise ReceiveMessage
-
-        Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] PROGRESSION: {message} ({progress.Percentage}%)");
-    }
-
-    // Helper pour envoyer la liste des partenaires identifiés
-    private async Task SendIdentifiedPartnersToFrontend(List<PartnerInfo> partners, CancellationToken cancellationToken = default)
-    {
-        if (_hubContext != null)
-        {
-            await _hubContext.Clients.All.SendAsync("ReceiveIdentifiedPartners", partners, cancellationToken);
-        }
-        Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] PARTENAIRES IDENTIFIÉS : {partners.Count} partenaires envoyés au frontend.");
-    }
-
-    // Helper pour envoyer un récapitulatif d'email envoyé
-    private async Task SendSentEmailSummaryToFrontend(SentEmailSummary summary, CancellationToken cancellationToken = default)
-    {
-        if (_hubContext != null)
-        {
-            await _hubContext.Clients.All.SendAsync("ReceiveSentEmailSummary", summary, cancellationToken);
-        }
-        Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] RÉCAPITULATIF EMAIL : Fichier '{summary.FileName}' envoyé à '{summary.PartnerName}'.");
-    }
-
-    // Helper pour envoyer le nombre total de fichiers à traiter
-    private async Task SendTotalFilesCountToFrontend(int totalFiles, CancellationToken cancellationToken = default)
-    {
-        if (_hubContext != null)
-        {
-            await _hubContext.Clients.All.SendAsync("ReceiveTotalFilesCount", totalFiles, cancellationToken);
-        }
-        Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] TOTAL FICHIERS : {totalFiles} fichiers détectés pour l'envoi.");
-    }
 
 
 
-
-
-
-
-
-    public static int ComputeLevenshteinDistance(string s, string t)
-    {
-        int n = s.Length;
-        int m = t.Length;
-        var d = new int[n + 1, m + 1];
-
-        for (int i = 0; i <= n; i++) d[i, 0] = i;
-        for (int j = 0; j <= m; j++) d[0, j] = j;
-
-        for (int i = 1; i <= n; i++)
-        {
-            for (int j = 1; j <= m; j++)
-            {
-                int cost = (s[i - 1] == t[j - 1]) ? 0 : 1;
-                d[i, j] = Math.Min(
-                    Math.Min(d[i - 1, j] + 1, d[i, j - 1] + 1),
-                    d[i - 1, j - 1] + cost);
-            }
-        }
-        return d[n, m];
-    }
-
-    public static string ShowStringDifferences(string original, string compared)
-    {
-        int maxLength = Math.Max(original.Length, compared.Length);
-        var diffBuilder = new System.Text.StringBuilder();
-
-        diffBuilder.AppendLine($"Original : \"{original}\"");
-        diffBuilder.AppendLine($"Compared : \"{compared}\"");
-        diffBuilder.AppendLine("Diff    : ");
-
-        for (int i = 0; i < maxLength; i++)
-        {
-            char c1 = i < original.Length ? original[i] : '-';
-            char c2 = i < compared.Length ? compared[i] : '-';
-
-            diffBuilder.Append(c1 == c2 ? ' ' : '^');
-        }
-
-        return diffBuilder.ToString();
-    }
-
-
+   
     public async Task<List<EmailToSend>> PrepareCompleteEmailsAsync(
         string partnerEmailFilePath,
         string generatedFilesFolderPath,
@@ -227,7 +126,7 @@ public class PartnerEmailSender : IPartnerEmailSender
                         .Select(p => new
                         {
                             Partner = p,
-                            Distance = ComputeLevenshteinDistance(
+                            Distance = StringUtils.ComputeLevenshteinDistance(
                                 p.PartnerName.NormalizeSpaces().ToLowerInvariant(),
                                 partnerNameFromFile.ToLowerInvariant())
                         })
@@ -237,7 +136,7 @@ public class PartnerEmailSender : IPartnerEmailSender
                     string closestName = closestPartner?.Partner.PartnerName ?? "[AUCUN PARTENAIRE]";
                     int distance = closestPartner?.Distance ?? -1;
 
-                    string diffDetails = ShowStringDifferences(closestName, partnerNameFromFile);
+                    string diffDetails = StringUtils.ShowStringDifferences(closestName, partnerNameFromFile);
 
                     await LogAndSend(
                         $"*****************************************************************************************************************************************************************************************************************************\n" +
@@ -304,7 +203,6 @@ public class PartnerEmailSender : IPartnerEmailSender
 
                 if (sent)
                 {
-                    await LogAndSend($"Email envoyé à : {string.Join(", ", email.ToRecipients)}", cancellationToken);
 
                     results.Add(new EmailSendResult
                     {
