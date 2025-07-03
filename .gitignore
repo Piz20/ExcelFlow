@@ -1,1 +1,5 @@
 frontend/backend/
+frontend/bin/
+frontend/obj/
+backend/bin/
+backend/obj/
