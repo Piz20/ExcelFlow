@@ -64,39 +64,52 @@ public class PartnerEmailSender : IPartnerEmailSender
 
 
 
-   
+
     public async Task<List<EmailToSend>> PrepareCompleteEmailsAsync(
-        string partnerEmailFilePath,
-        string generatedFilesFolderPath,
-        string? smtpFromEmail,
-        string? smtpHost,
-        int? smtpPort,
-        string? fromDisplayName,
-        List<string>? ccRecipients,
-        List<string>? bccRecipients,
-        CancellationToken cancellationToken)
+    string partnerEmailFilePath,
+    string generatedFilesFolderPath,
+    string? smtpFromEmail,
+    string? smtpHost,
+    int? smtpPort,
+    string? fromDisplayName,
+    List<string>? ccRecipients,
+    List<string>? bccRecipients,
+    CancellationToken cancellationToken)
     {
         var partners = await Task.Run(() =>
             _partnerExcelReader.ReadPartnersFromExcel(partnerEmailFilePath, cancellationToken), cancellationToken);
 
         var allGeneratedFiles = Directory.GetFiles(generatedFilesFolderPath).ToList();
         var preparedEmails = new List<EmailToSend>();
+        var ignoredFilesDetails = new List<(string FileName, string Reason)>();
 
         for (int i = 0; i < allGeneratedFiles.Count; i++)
         {
             var filePath = allGeneratedFiles[i];
 
             await LogAndSend(
-      $"\n\n\n\n📄 Traitement du fichier {i + 1}/{allGeneratedFiles.Count} : {Path.GetFileName(filePath)}",
-      cancellationToken);
+                $"\n\n\n\n📄 Traitement du fichier {i + 1}/{allGeneratedFiles.Count} : {Path.GetFileName(filePath)}",
+                cancellationToken);
 
             var emailData = await _emailDataExtractor.ExtractEmailDataFromAttachment(filePath, cancellationToken);
             if (emailData == null)
             {
+                ignoredFilesDetails.Add((Path.GetFileName(filePath), "Données email non extraites (structure incorrecte ou vide)."));
                 continue;
             }
 
             var partnerNameFromFile = emailData.PartnerNameInFile?.NormalizeSpaces() ?? string.Empty;
+
+            if (string.IsNullOrWhiteSpace(partnerNameFromFile))
+            {
+                await LogAndSend(
+                    $"***************************************************************************************************************************\n" +
+                    $"Aucun nom de partenaire extrait dans le fichier '{Path.GetFileName(filePath)}'. Impossible de trouver une correspondance.",
+                    cancellationToken);
+
+                ignoredFilesDetails.Add((Path.GetFileName(filePath), "Nom de partenaire non détecté dans le fichier."));
+                continue;
+            }
 
             var partner = partners.FirstOrDefault(p =>
                 p.PartnerName.NormalizeSpaces().Equals(partnerNameFromFile, StringComparison.OrdinalIgnoreCase));
@@ -120,43 +133,51 @@ public class PartnerEmailSender : IPartnerEmailSender
             }
             else
             {
-                if (!string.IsNullOrEmpty(partnerNameFromFile))
-                {
-                    var closestPartner = partners
-                        .Select(p => new
-                        {
-                            Partner = p,
-                            Distance = StringUtils.ComputeLevenshteinDistance(
-                                p.PartnerName.NormalizeSpaces().ToLowerInvariant(),
-                                partnerNameFromFile.ToLowerInvariant())
-                        })
-                        .OrderBy(x => x.Distance)
-                        .FirstOrDefault();
+                var closestPartner = partners
+                    .Select(p => new
+                    {
+                        Partner = p,
+                        Distance = StringUtils.ComputeLevenshteinDistance(
+                            p.PartnerName.NormalizeSpaces().ToLowerInvariant(),
+                            partnerNameFromFile.ToLowerInvariant())
+                    })
+                    .OrderBy(x => x.Distance)
+                    .FirstOrDefault();
 
-                    string closestName = closestPartner?.Partner.PartnerName ?? "[AUCUN PARTENAIRE]";
-                    int distance = closestPartner?.Distance ?? -1;
+                string closestName = closestPartner?.Partner.PartnerName ?? "[AUCUN PARTENAIRE]";
+                int distance = closestPartner?.Distance ?? -1;
 
-                    string diffDetails = StringUtils.ShowStringDifferences(closestName, partnerNameFromFile);
+                string diffDetails = StringUtils.ShowStringDifferences(closestName, partnerNameFromFile);
 
-                    await LogAndSend(
-                        $"*****************************************************************************************************************************************************************************************************************************\n" +
-                        $"Aucun partenaire exact trouvé pour le fichier '{Path.GetFileName(filePath)}' (Nom extrait: '{partnerNameFromFile}').\n" +
-                        $"Nom partenaire le plus proche: '{closestName}' (Distance: {distance}).\n" +
-                        $"Détail des différences :\n{diffDetails}",
-                        cancellationToken);
-                }
-                else
-                {
-                    await LogAndSend(
-                        $"*****************************************************************************************************************************************************************************************************************************\n" +
-                        $"Aucun nom de partenaire extrait dans le fichier '{Path.GetFileName(filePath)}'. Impossible de trouver une correspondance.",
-                        cancellationToken);
-                }
+                await LogAndSend(
+                    $"***************************************************************************************************************************\n" +
+                    $"Aucun partenaire exact trouvé pour le fichier '{Path.GetFileName(filePath)}' (Nom extrait: '{partnerNameFromFile}').\n" +
+                    $"Nom partenaire le plus proche: '{closestName}' (Distance: {distance}).\n" +
+                    $"Détail des différences :\n{diffDetails}",
+                    cancellationToken);
+
+                ignoredFilesDetails.Add((Path.GetFileName(filePath), $"Aucun partenaire ne correspond au nom extrait '{partnerNameFromFile}' — plus proche : '{closestName}' (distance : {distance})"));
             }
+        }
+
+        // 🔚 Log final de récapitulatif des fichiers ignorés
+        if (ignoredFilesDetails.Any())
+        {
+            await LogAndSend("\n\n📋 Résumé final des fichiers ignorés :", cancellationToken);
+            foreach (var entry in ignoredFilesDetails)
+            {
+                await LogAndSend($"❌ {entry.FileName} — {entry.Reason}", cancellationToken);
+            }
+            await LogAndSend($"➡️ Total ignorés : {ignoredFilesDetails.Count} fichier(s)", cancellationToken);
+        }
+        else
+        {
+            await LogAndSend("\n✅ Tous les fichiers ont été traités avec succès (aucun fichier ignoré).", cancellationToken);
         }
 
         return preparedEmails;
     }
+
 
 
 

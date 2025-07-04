@@ -1,6 +1,7 @@
 <Window x:Class="ExcelFlow.EmailPreviewWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:ExcelFlow.Converters"
         Title="Aperçu des Emails Préparés"
         Height="650"
         Width="1000"
@@ -12,7 +13,7 @@
 
         <!-- Style bouton générique -->
         <Style x:Key="ButtonStyle"
-                TargetType="Button">
+               TargetType="Button">
             <Setter Property="Margin"
                     Value="5,0"/>
             <Setter Property="Padding"
@@ -33,8 +34,8 @@
 
         <!-- Style personnalisé pour le bouton Stop -->
         <Style x:Key="StopButtonStyle"
-                TargetType="Button"
-                BasedOn="{StaticResource ButtonStyle}">
+               TargetType="Button"
+               BasedOn="{StaticResource ButtonStyle}">
             <Setter Property="Background"
                     Value="#8B0000"/>
             <!-- Rouge foncé par défaut -->
@@ -42,7 +43,7 @@
                     Value="White"/>
             <Style.Triggers>
                 <Trigger Property="IsEnabled"
-                        Value="False">
+                         Value="False">
                     <Setter Property="Background"
                             Value="#FFC0C0"/>
                     <!-- Rouge pâle quand désactivé -->
@@ -51,7 +52,7 @@
                     <!-- Texte rouge foncé -->
                 </Trigger>
                 <Trigger Property="IsMouseOver"
-                        Value="True">
+                         Value="True">
                     <Setter Property="Background"
                             Value="#A52A2A"/>
                     <!-- Rouge un peu plus clair au survol -->
@@ -65,7 +66,7 @@
                     Value="False"/>
             <Style.Triggers>
                 <Trigger Property="IsSelected"
-                        Value="True">
+                         Value="True">
                     <Setter Property="Background"
                             Value="Transparent"/>
                     <Setter Property="BorderBrush"
@@ -73,6 +74,9 @@
                 </Trigger>
             </Style.Triggers>
         </Style>
+
+        <local:InverseBoolConverter x:Key="InverseBoolConverter"/>
+
     </Window.Resources>
 
     <Grid Margin="10">
@@ -91,8 +95,8 @@
 
         <!-- Zone de sélection -->
         <StackPanel Orientation="Horizontal"
-                Grid.Row="0"
-                Margin="0,0,0,10">
+                    Grid.Row="0"
+                    Margin="0,0,0,10">
             <CheckBox x:Name="SelectAllCheckBox"
                       Content="Tout sélectionner"
                       Click="SelectAllCheckBox_Click"
@@ -119,12 +123,20 @@
                   MaxHeight="600"
                   MinHeight="100">
             <DataGrid.Columns>
-                <DataGridCheckBoxColumn Header=""
-                                        Binding="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                        Width="40"
-                                        ElementStyle="{StaticResource {x:Type CheckBox}}"/>
+                <DataGridTemplateColumn Header=""
+                                        Width="40">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                      IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBoolConverter}}"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
                 <DataGridTemplateColumn Header="Partenaire"
-                        Width="200">
+                                        Width="200">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <ComboBox ItemsSource="{Binding PartnerNameList}"
@@ -134,7 +146,7 @@
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
                 <DataGridTemplateColumn Header="Fichier à envoyer"
-                        Width="*">
+                                        Width="*">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <ComboBox ItemsSource="{Binding AttachmentFilePaths}"
@@ -144,7 +156,7 @@
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
                 <DataGridTemplateColumn Header="Destinataires"
-                        Width="250">
+                                        Width="250">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <ComboBox ItemsSource="{Binding ToRecipients}"
@@ -154,7 +166,7 @@
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
                 <DataGridTemplateColumn Header="Statut"
-                        Width="100">
+                                        Width="100">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <StackPanel HorizontalAlignment="Center">

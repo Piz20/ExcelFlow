@@ -236,6 +236,7 @@ namespace ExcelFlow.Views
             string fromDisplayName = FromDisplayNameTextBox.Text.Trim();
             string ccText = CcRecipientsTextBox.Text.Trim();
             string bccText = BccRecipientsTextBox.Text.Trim();
+            ;
 
             if (string.IsNullOrWhiteSpace(_generatedFilesFolderPath) || string.IsNullOrWhiteSpace(_partnerEmailFilePath))
             {
@@ -264,8 +265,9 @@ namespace ExcelFlow.Views
                 GeneratedFilesFolder = _generatedFilesFolderPath,
                 PartnerExcelPath = _partnerEmailFilePath,
                 FromDisplayName = fromDisplayName,
-                CcRecipients = ccText.Split(new[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToList(),
-                BccRecipients = bccText.Split(new[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToList(),
+                CcRecipients = EmailUtils.ExtractEmails(ccText),
+                BccRecipients = EmailUtils.ExtractEmails(bccText),
+
                 SmtpHost = SmtpHost,
                 SmtpPort = SmtpPort,
                 SmtpFromEmail = SmtpFromEmail

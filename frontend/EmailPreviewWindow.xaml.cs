@@ -125,6 +125,21 @@ namespace ExcelFlow
                 }
             }
 
+
+            private bool _isReadOnly;
+            public bool IsReadOnly
+            {
+                get => _isReadOnly;
+                set
+                {
+                    if (_isReadOnly != value)
+                    {
+                        _isReadOnly = value;
+                        OnPropertyChanged(nameof(IsReadOnly));
+                    }
+                }
+            }
+
             public List<string> PartnerNameList => new List<string> { Email.PartnerName ?? "(Partenaire inconnu)" };
             public List<string> AttachmentFilePaths => Email.AttachmentFilePaths?.Count > 0
                 ? Email.AttachmentFilePaths
@@ -296,7 +311,9 @@ namespace ExcelFlow
 
             _cts = new CancellationTokenSource();
 
-            EmailsDataGrid.IsEnabled = false;
+            EmailsDataGrid.IsReadOnly = true; // Protection supplémentaire
+            SetInteractionLock(true);         // <- Désactive les checkbox
+
             SelectAllCheckBox.IsEnabled = false;
             SendSelectedButton.IsEnabled = false;
             StopButton.IsEnabled = true;
@@ -333,11 +350,9 @@ namespace ExcelFlow
                     catch (OperationCanceledException)
                     {
                         vm.IsSending = false;
-                        vm.IsSuccess = false;
-                        vm.IsFailure = false;
                         throw;
                     }
-                    catch (Exception ex)
+                    catch (Exception)
                     {
                         vm.IsSuccess = false;
                         vm.IsFailure = true;
@@ -367,7 +382,9 @@ namespace ExcelFlow
                 _cts.Dispose();
                 _cts = null;
 
-                EmailsDataGrid.IsEnabled = true;
+                SetInteractionLock(false);            // <- Réactive les checkbox
+                EmailsDataGrid.IsReadOnly = false;
+
                 SelectAllCheckBox.IsEnabled = true;
                 SendSelectedButton.IsEnabled = true;
                 StopButton.IsEnabled = false;
@@ -375,6 +392,15 @@ namespace ExcelFlow
                 UpdateSelectedEmailsCount();
             }
         }
+
+        private void SetInteractionLock(bool isLocked)
+        {
+            foreach (var vm in _emailViewModels)
+            {
+                vm.IsReadOnly = isLocked;
+            }
+        }
+
 
         private void Window_PreviewMouseDown(object sender, MouseButtonEventArgs e)
         {
